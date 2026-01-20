@@ -16,13 +16,19 @@ import Image from "next/image";
 import { useAuth } from "@/firebase/auth/use-auth";
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { useState, useEffect } from "react";
 
 export function Header() {
   const { user, signOut, isUserLoading } = useAuth();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-      <SidebarTrigger />
+      {isClient && <SidebarTrigger />}
       <div className="flex-1" />
       <div className="flex items-center gap-4">
         <ThemeToggle />
