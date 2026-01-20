@@ -53,7 +53,7 @@ export function SidebarNav() {
       <SidebarHeader className="p-4">
         <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
           <FormFlowLogo className="w-8 h-8 text-primary" />
-          <span className="font-headline text-2xl font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden whitespace-nowrap">
+          <span className="font-headline text-2xl font-semibold text-sidebar-foreground transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             FormFlow
           </span>
         </Link>
