@@ -57,7 +57,7 @@ service cloud.firestore {
     }
 
     function isFormEditor(editorsList) {
-      return isAuthenticated() && getUserId() in editorsList;
+      return isAuthenticated() && editorsList is list && getUserId() in editorsList;
     }
 
     function canEditForm(resource) {
