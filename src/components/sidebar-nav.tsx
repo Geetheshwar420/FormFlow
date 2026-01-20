@@ -20,6 +20,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/firebase/auth/use-auth";
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
   {
@@ -47,13 +49,24 @@ const menuItems = [
 export function SidebarNav() {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   return (
     <>
       <SidebarHeader className="p-4">
         <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
           <FormFlowLogo className="w-8 h-8 text-primary" />
-          <span className="font-headline text-2xl font-semibold text-sidebar-foreground transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <span
+            className={cn(
+              "font-headline text-2xl font-semibold text-sidebar-foreground",
+              isClient &&
+                "transition-all duration-200 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0"
+            )}
+          >
             FormFlow
           </span>
         </Link>
