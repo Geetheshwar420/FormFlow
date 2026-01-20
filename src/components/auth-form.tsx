@@ -13,16 +13,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { useAuth } from '@/firebase/auth/use-auth';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -76,18 +69,12 @@ export function AuthForm({ type }: AuthFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">
-          {type === 'login' ? 'Login' : 'Sign Up'}
-        </CardTitle>
-        <CardDescription>
-          {type === 'login'
-            ? 'Enter your email below to login to your account.'
-            : 'Enter your email and password to create an account.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <>
+        <div className="text-left mb-8">
+            <h1 className="text-3xl font-bold font-headline">
+            {type === 'login' ? 'Sign In to your Account' : 'Create an Account'}
+            </h1>
+        </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -95,9 +82,12 @@ export function AuthForm({ type }: AuthFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="m@example.com" {...field} />
+                    <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input placeholder="m@example.com" {...field} className="pl-10" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,7 +100,10 @@ export function AuthForm({ type }: AuthFormProps) {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                     <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +111,7 @@ export function AuthForm({ type }: AuthFormProps) {
             />
             <Button type="submit" className="w-full" disabled={isAuthLoading}>
               {isAuthLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {type === 'login' ? 'Login' : 'Sign Up'}
+              {type === 'login' ? <>Sign In <ArrowRight /></> : 'Sign Up'}
             </Button>
           </form>
         </Form>
@@ -139,7 +132,6 @@ export function AuthForm({ type }: AuthFormProps) {
             </>
           )}
         </div>
-      </CardContent>
-    </Card>
+    </>
   );
 }

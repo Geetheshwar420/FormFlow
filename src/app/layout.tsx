@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+'use client';
+
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ import { Header } from "@/components/header";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { usePathname } from "next/navigation";
 
 const fontBody = Inter({
   subsets: ["latin"],
@@ -24,20 +26,23 @@ const fontHeadline = Inter({
   variable: "--font-headline",
 });
 
-export const metadata: Metadata = {
-  title: "FormFlow",
-  description:
-    "An advanced survey and form builder to create, customize, and distribute surveys and forms.",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAppPage = !['/', '/login', '/signup'].includes(pathname);
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <title>FormFlow</title>
+        <meta
+          name="description"
+          content="An advanced survey and form builder to create, customize, and distribute surveys and forms."
+        />
+      </head>
       <body
         className={cn(
           "font-body antialiased",
@@ -52,17 +57,21 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
-            <SidebarProvider>
-              <Sidebar collapsible="icon" className="border-r border-sidebar-border/50">
-                <SidebarNav />
-              </Sidebar>
-              <SidebarInset className="flex flex-col">
-                <Header />
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-                  {children}
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
+            {isAppPage ? (
+                <SidebarProvider>
+                  <Sidebar collapsible="icon" className="border-r border-sidebar-border/50">
+                    <SidebarNav />
+                  </Sidebar>
+                  <SidebarInset className="flex flex-col">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                      {children}
+                    </main>
+                  </SidebarInset>
+                </SidebarProvider>
+            ) : (
+                <>{children}</>
+            )}
             <Toaster />
           </FirebaseClientProvider>
         </ThemeProvider>
