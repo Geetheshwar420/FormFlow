@@ -15,9 +15,6 @@
  * - Anonymous Form Submissions: To allow public participation, the creation of `responses` and `answers`
  *   is permitted for any user (authenticated or not). However, only the form's owner can read, update,
  *   or delete these submissions.
- * - Corrected Analytics Path: The provided data structure suggested an insecure top-level path
- *   `/forms/{formId}/analytics`. This has been corrected to `/users/{userId}/forms/{formId}/analytics`
- *   to ensure analytics data can be properly secured by the form's owner.
  * - Backend-Managed Analytics: Client-side writes to the `analytics` collection are disabled, assuming
  *   this data will be aggregated and written by a trusted backend process (e.g., Cloud Functions).
  *
@@ -93,25 +90,9 @@ service cloud.firestore {
       match /forms/{formId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.userId == userId;
-        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow create: if isOwner(userId) && request.resource.data.userId == userId && request.resource.data.questions is list;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId && request.resource.data.questions is list;
         allow delete: if isExistingOwner(userId);
-
-        /**
-         * @description Rules for Questions within a Form.
-         * @path /users/{userId}/forms/{formId}/questions/{questionId}
-         * @allow (update) The form owner can update a question within their form.
-         * @deny (create) A user cannot create a question in another user's form.
-         * @principle Access is inherited from the parent form's ownership.
-         */
-        match /questions/{questionId} {
-          allow get: if isOwner(userId);
-          allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && request.resource.data.formId == formId;
-          allow update: if isExistingOwner(userId) && request.resource.data.formId == resource.data.formId;
-          allow delete: if isExistingOwner(userId);
-        }
-
         /**
          * @description Rules for Responses to a Form. Allows public creation but restricts
          *              management to the form owner.
@@ -147,8 +128,6 @@ service cloud.firestore {
 
         /**
          * @description Rules for Form Analytics data. This data is read-only for the form owner.
-         *              NOTE: The original IR specified a top-level `/forms/{formId}/analytics` path.
-         *              This path is not securable, so it has been moved here to enforce ownership.
          */
         match /analytics/{analyticsId} {
           allow get: if isOwner(userId);

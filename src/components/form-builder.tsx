@@ -1,28 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Form, Question, QuestionType } from "@/lib/types";
 import {
   PlusCircle,
   Trash2,
-  Type,
-  List,
-  Star,
-  Upload,
-  FileText,
-  BadgeCheck,
   Copy,
+  ArrowLeft,
+  Share,
+  Pencil,
+  Eye,
+  BarChart3
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase/auth/use-auth";
 import { useFirestore } from "@/firebase/provider";
@@ -30,18 +29,16 @@ import { collection, doc } from "firebase/firestore";
 import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useRouter } from "next/navigation";
 
-
 const questionTypes: {
   value: QuestionType;
   label: string;
-  icon: React.ElementType;
 }[] = [
-  { value: "text", label: "Text", icon: Type },
-  { value: "textarea", label: "Paragraph", icon: FileText },
-  { value: "multiple-choice", label: "Multiple Choice", icon: List },
-  { value: "checkboxes", label: "Checkboxes", icon: BadgeCheck },
-  { value: "rating", label: "Rating", icon: Star },
-  { value: "file-upload", label: "File Upload", icon: Upload },
+  { value: "text", label: "Short Text" },
+  { value: "textarea", label: "Paragraph" },
+  { value: "multiple-choice", label: "Multiple Choice" },
+  { value: "checkboxes", label: "Checkboxes" },
+  { value: "rating", label: "Rating" },
+  { value: "file-upload", label: "File Upload" },
 ];
 
 interface FormBuilderProps {
@@ -56,21 +53,19 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
 
   const [title, setTitle] = useState(initialData?.title || "Untitled Form");
   const [description, setDescription] = useState(initialData?.description || "");
-  const [questions, setQuestions] = useState<Question[]>(() => 
-    initialData?.questions.map((q, i) => ({...q, id: `q_${i}_${Date.now()}`})) || []
+  const [questions, setQuestions] = useState<Question[]>(() =>
+    initialData?.questions.map((q) => ({ ...q, id: crypto.randomUUID() })) || []
   );
-  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
 
   const addQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
-      id: `q_${Date.now()}`,
+      id: crypto.randomUUID(),
       type,
       text: "Untitled Question",
       required: false,
-      ...( (type === "multiple-choice" || type === "checkboxes") && { options: ["Option 1"] } )
+      ...((type === "multiple-choice" || type === "checkboxes") && { options: ["Option 1"] })
     };
     setQuestions([...questions, newQuestion]);
-    setSelectedQuestion(newQuestion.id);
   };
 
   const updateQuestion = (id: string, updates: Partial<Question>) => {
@@ -81,19 +76,16 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
 
   const removeQuestion = (id: string) => {
     setQuestions(questions.filter((q) => q.id !== id));
-    if (selectedQuestion === id) {
-        setSelectedQuestion(null);
-    }
   };
-  
+
   const duplicateQuestion = (id: string) => {
     const questionToDuplicate = questions.find(q => q.id === id);
     if (questionToDuplicate) {
-        const newQuestion = { ...questionToDuplicate, id: `q_${Date.now()}` };
-        const index = questions.findIndex(q => q.id === id);
-        const newQuestions = [...questions];
-        newQuestions.splice(index + 1, 0, newQuestion);
-        setQuestions(newQuestions);
+      const newQuestion = { ...questionToDuplicate, id: crypto.randomUUID() };
+      const index = questions.findIndex(q => q.id === id);
+      const newQuestions = [...questions];
+      newQuestions.splice(index + 1, 0, newQuestion);
+      setQuestions(newQuestions);
     }
   };
 
@@ -107,27 +99,29 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
       return;
     }
 
-    if (initialData?.id) {
-      const formRef = doc(firestore, `users/${user.uid}/forms/${initialData.id}`);
-      const formToUpdate = {
-        title,
-        description,
-        questions: questions.map(({id, ...rest}) => rest),
-        updatedAt: new Date().toISOString(),
-      };
-      setDocumentNonBlocking(formRef, formToUpdate, { merge: true });
-      toast({
-        title: "Form updated!",
-        description: "Your form has been successfully updated.",
-      });
-      router.push('/');
-    } else {
-      try {
+    const formPayload = {
+      title,
+      description,
+      questions: questions.map(({ id, ...rest }) => rest), // Remove client-side id before saving
+    };
+
+    try {
+      if (initialData?.id) {
+        const formRef = doc(firestore, `users/${user.uid}/forms/${initialData.id}`);
+        const formToUpdate = {
+          ...formPayload,
+          updatedAt: new Date().toISOString(),
+        };
+        setDocumentNonBlocking(formRef, formToUpdate, { merge: true });
+        toast({
+          title: "Form updated!",
+          description: "Your form has been successfully updated.",
+        });
+      } else {
         const formsCollection = collection(firestore, `users/${user.uid}/forms`);
         const formToSave = {
-          title,
-          description,
-          questions: questions.map(({id, ...rest}) => rest), // Remove client-side id before saving
+          ...formPayload,
+          userId: user.uid,
           responseCount: 0,
           createdAt: new Date().toISOString(),
         };
@@ -136,132 +130,148 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           title: "Form saved!",
           description: "Your form has been successfully saved.",
         });
-        router.push('/');
-      } catch (error) {
-        console.error("Error saving form:", error);
-        toast({
-          title: "Error",
-          description: "There was an error saving your form.",
-          variant: "destructive",
-        });
       }
+      router.push('/dashboard');
+    } catch (error) {
+      console.error("Error saving form:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your form.",
+        variant: "destructive",
+      });
     }
-  }
-
-
-  const QuestionEditor = ({ question }: { question: Question }) => (
-    <div className="space-y-4">
-        <div className="space-y-2">
-            <Label htmlFor={`q-text-${question.id}`}>Question Text</Label>
-            <Input
-                id={`q-text-${question.id}`}
-                value={question.text}
-                onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
-            />
-        </div>
-        {(question.type === "multiple-choice" || question.type === "checkboxes") && (
-            <div className="space-y-2">
-                <Label>Options</Label>
-                {question.options?.map((option, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                        <Input
-                            value={option}
-                            onChange={(e) => {
-                                const newOptions = [...(question.options || [])];
-                                newOptions[index] = e.target.value;
-                                updateQuestion(question.id, { options: newOptions });
-                            }}
-                        />
-                        <Button variant="ghost" size="icon" onClick={() => {
-                            const newOptions = question.options?.filter((_, i) => i !== index);
-                            updateQuestion(question.id, { options: newOptions });
-                        }}><Trash2 className="w-4 h-4 text-muted-foreground" /></Button>
-                    </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={() => {
-                    const newOptions = [...(question.options || []), `Option ${ (question.options?.length || 0) + 1}`];
-                    updateQuestion(question.id, { options: newOptions });
-                }}><PlusCircle className="mr-2 h-4 w-4" /> Add Option</Button>
-            </div>
-        )}
-        <Separator />
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => duplicateQuestion(question.id)}><Copy className="w-4 h-4" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => removeQuestion(question.id)}><Trash2 className="w-4 h-4" /></Button>
-            </div>
-            <div className="flex items-center space-x-2">
-                <Label htmlFor={`required-${question.id}`}>Required</Label>
-                <Switch
-                    id={`required-${question.id}`}
-                    checked={question.required}
-                    onCheckedChange={(checked) => updateQuestion(question.id, { required: checked })}
-                />
-            </div>
-        </div>
-    </div>
-  );
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-      <div className="lg:col-span-2 space-y-6">
-        <Card>
-          <CardContent className="pt-6">
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-3xl font-headline font-bold border-none shadow-none focus-visible:ring-0 px-0 h-auto"
-            />
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Form description"
-              className="mt-2 border-none shadow-none focus-visible:ring-0 px-0"
-            />
-          </CardContent>
-        </Card>
-
-        {questions.map((q) => (
-          <Card key={q.id} onClick={() => setSelectedQuestion(q.id)} className={`cursor-pointer transition-all ${selectedQuestion === q.id ? 'border-primary ring-2 ring-primary' : 'hover:border-primary/50'}`}>
-            <CardContent className="pt-6">
-                {selectedQuestion === q.id ? (
-                    <QuestionEditor question={q} />
-                ) : (
-                    <div>
-                        <p className="font-semibold">{q.text} {q.required && <span className="text-destructive">*</span>}</p>
-                        { (q.type === 'text') && <Input disabled placeholder="Short answer text" className="mt-2" />}
-                        { (q.type === 'textarea') && <Textarea disabled placeholder="Long answer text" className="mt-2" />}
-                        { (q.type === 'multiple-choice' || q.type === 'checkboxes') && <div className="mt-2 space-y-2 text-muted-foreground">{q.options?.map((opt, i) => <p key={i}>- {opt}</p>)}</div>}
-                        { (q.type === 'rating') && <p className="text-sm text-muted-foreground mt-2">Rating input placeholder</p>}
-                        { (q.type === 'file-upload') && <p className="text-sm text-muted-foreground mt-2">File upload placeholder</p>}
-                    </div>
-                )}
-            </CardContent>
-          </Card>
-        ))}
-         <Card className="border-dashed">
-            <CardContent className="pt-6 text-center">
-                 <p className="text-muted-foreground mb-4">Add a new question to your form</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {questionTypes.map((qt) => (
-                    <Button
-                    key={qt.value}
-                    variant="outline"
-                    onClick={() => addQuestion(qt.value)}
-                    className="flex flex-col h-24 gap-2"
-                    >
-                    <qt.icon className="w-8 h-8 text-primary" />
-                    <span>{qt.label}</span>
-                    </Button>
-                ))}
-                </div>
-            </CardContent>
-        </Card>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold font-headline">{initialData ? 'Edit Form' : 'Create Form'}</h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+           <Button onClick={saveForm}>
+            <Share className="mr-2 h-4 w-4" /> {initialData ? 'Save Changes' : 'Share / Publish'}
+          </Button>
+        </div>
       </div>
 
-      <div className="space-y-6 lg:sticky top-24">
-        <Button size="lg" className="w-full" onClick={saveForm}>Save Form</Button>
-      </div>
+      <Tabs defaultValue="builder" className="w-full">
+        <TabsList>
+          <TabsTrigger value="builder"><Pencil className="mr-2 h-4 w-4" />Builder</TabsTrigger>
+          <TabsTrigger value="preview"><Eye className="mr-2 h-4 w-4" />Preview</TabsTrigger>
+          <TabsTrigger value="responses"><BarChart3 className="mr-2 h-4 w-4" />Responses</TabsTrigger>
+        </TabsList>
+        <TabsContent value="builder" className="mt-6">
+          <div className="flex flex-col gap-6">
+            <Card className="border-t-4 border-t-primary">
+              <CardContent className="pt-6">
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Untitled Form"
+                  className="text-3xl font-headline font-bold border-none shadow-none focus-visible:ring-0 px-0 h-auto"
+                />
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Form description"
+                  className="mt-2 border-none shadow-none focus-visible:ring-0 px-0"
+                />
+              </CardContent>
+            </Card>
+
+            {questions.map((question) => (
+              <Card key={question.id}>
+                <CardContent className="pt-6">
+                   <div className="flex justify-between items-start gap-4">
+                      <Input
+                          placeholder="Untitled Question"
+                          value={question.text}
+                          onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
+                          className="text-lg font-semibold border-none shadow-none focus-visible:ring-0 px-0 flex-grow"
+                      />
+                      <Select onValueChange={(type: QuestionType) => updateQuestion(question.id, { type })} defaultValue={question.type}>
+                          <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder="Question type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {questionTypes.map(qt => (
+                                <SelectItem key={qt.value} value={qt.value}>{qt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="mt-4">
+                     {(question.type === "multiple-choice" || question.type === "checkboxes") && (
+                        <div className="space-y-2">
+                            <Label>Options</Label>
+                            {question.options?.map((option, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input
+                                        value={option}
+                                        onChange={(e) => {
+                                            const newOptions = [...(question.options || [])];
+                                            newOptions[index] = e.target.value;
+                                            updateQuestion(question.id, { options: newOptions });
+                                        }}
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => {
+                                        const newOptions = question.options?.filter((_, i) => i !== index);
+                                        updateQuestion(question.id, { options: newOptions });
+                                    }}><Trash2 className="w-4 h-4 text-muted-foreground" /></Button>
+                                </div>
+                            ))}
+                            <Button variant="outline" size="sm" onClick={() => {
+                                const newOptions = [...(question.options || []), `Option ${ (question.options?.length || 0) + 1}`];
+                                updateQuestion(question.id, { options: newOptions });
+                            }}><PlusCircle className="mr-2 h-4 w-4" /> Add Option</Button>
+                        </div>
+                    )}
+                  </div>
+                  <Separator className="my-4" />
+                   <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" size="icon" title="Duplicate" onClick={() => duplicateQuestion(question.id)}><Copy className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => removeQuestion(question.id)}><Trash2 className="w-4 h-4" /></Button>
+                      <Separator orientation="vertical" className="h-6 mx-2" />
+                      <div className="flex items-center space-x-2">
+                          <Label htmlFor={`required-${question.id}`}>Required</Label>
+                          <Switch
+                              id={`required-${question.id}`}
+                              checked={question.required}
+                              onCheckedChange={(checked) => updateQuestion(question.id, { required: checked })}
+                          />
+                      </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+             <Button variant="outline" className="w-full py-8 border-dashed" onClick={() => addQuestion('text')}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Question
+            </Button>
+          </div>
+        </TabsContent>
+        <TabsContent value="preview" className="mt-6">
+            <Card>
+                <CardContent className="pt-6">
+                    <p>Form preview will be displayed here.</p>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="responses" className="mt-6">
+             <Card>
+                <CardContent className="pt-6">
+                    <p>Form responses will be displayed here.</p>
+                </CardContent>
+            </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

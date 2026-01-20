@@ -60,6 +60,13 @@
           "type": "string",
           "description": "Description of the form."
         },
+        "questions": {
+          "type": "array",
+          "description": "An array of question objects embedded in the form.",
+          "items": {
+            "$ref": "#/backend/entities/Question"
+          }
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the form was created.",
@@ -76,6 +83,7 @@
         "userId",
         "title",
         "description",
+        "questions",
         "createdAt",
         "updatedAt"
       ]
@@ -334,30 +342,6 @@
         }
       },
       {
-        "path": "/users/{userId}/forms/{formId}/questions/{questionId}",
-        "definition": {
-          "entityName": "Question",
-          "schema": {
-            "$ref": "#/backend/entities/Question"
-          },
-          "description": "Stores questions associated with each form.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "formId",
-              "description": "The unique identifier of the form."
-            },
-            {
-              "name": "questionId",
-              "description": "The unique identifier of the question."
-            }
-          ]
-        }
-      },
-      {
         "path": "/users/{userId}/forms/{formId}/responses/{responseId}",
         "definition": {
           "entityName": "Response",
@@ -470,6 +454,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the FormFlow application.  Path-based ownership is used where appropriate (`/users/{userId}/forms/{formId}`) to secure user-owned data.  Membership maps are not needed as the application revolves around private user data, not collaborative data.  The structure also segregates data based on access needs, avoiding the need for complex rules that act as filters. This approach simplifies security rules and enhances debuggability.\n\n*   **Users:** Stores user profiles and authentication information.\n*   **Forms:**  Each user has their own collection of forms. This path-based ownership simplifies security rules, as access control is directly tied to the user's ID in the path.\n*   **Questions:** Questions are stored as subcollections of forms (`/users/{userId}/forms/{formId}/questions/{questionId}`). This maintains the hierarchical relationship and allows for easy retrieval of questions associated with a specific form.\n*   **Responses:** Responses are stored as subcollections of forms (`/users/{userId}/forms/{formId}/responses/{responseId}`). Each response includes the `userId` for identifying the submitter (nullable for anonymous responses).\n*   **Answers:** Answers are stored as subcollections of responses (`/users/{userId}/forms/{formId}/responses/{responseId}/answers/{answerId}`).  This maintains the relationships between forms, responses, questions, and answers.\n*   **Themes:** Stores theme settings for each user, with a 1:1 relationship to the user.\n*   **Settings:** Stores user-specific settings, like language preferences, notifications, etc.\n*   **Analytics:** Stores analytics data associated with each form. Daily aggregation is suggested here in the `date` property to prevent unbounded collection sizes.\n\nThis structure supports the required QAPs:\n\n*   **Secure List Operations:**  The path-based ownership (`/users/{userId}/forms/{formId}`) enables secure list operations for forms and related data, as rules can simply check `request.auth.uid == userId`.\n*   **Authorization Independence:** Denormalization is not required in this design, as path-based ownership removes the need for `get()` calls to determine access.  Each entity's access is directly tied to the user ID in the path."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability for the FormFlow application.  Path-based ownership is used where appropriate (`/users/{userId}/forms/{formId}`) to secure user-owned data.  Membership maps are not needed as the application revolves around private user data, not collaborative data.  The structure also segregates data based on access needs, avoiding the need for complex rules that act as filters. This approach simplifies security rules and enhances debuggability.\n\n*   **Users:** Stores user profiles and authentication information.\n*   **Forms:**  Each user has their own collection of forms. This path-based ownership simplifies security rules, as access control is directly tied to the user's ID in the path. Questions are stored as an embedded array within the form document.\n*   **Responses:** Responses are stored as subcollections of forms (`/users/{userId}/forms/{formId}/responses/{responseId}`). Each response includes the `userId` for identifying the submitter (nullable for anonymous responses).\n*   **Answers:** Answers are stored as subcollections of responses (`/users/{userId}/forms/{formId}/responses/{responseId}/answers/{answerId}`).  This maintains the relationships between forms, responses, questions, and answers.\n*   **Themes:** Stores theme settings for each user, with a 1:1 relationship to the user.\n*   **Settings:** Stores user-specific settings, like language preferences, notifications, etc.\n*   **Analytics:** Stores analytics data associated with each form. Daily aggregation is suggested here in the `date` property to prevent unbounded collection sizes.\n\nThis structure supports the required QAPs:\n\n*   **Secure List Operations:**  The path-based ownership (`/users/{userId}/forms/{formId}`) enables secure list operations for forms and related data, as rules can simply check `request.auth.uid == userId`.\n*   **Authorization Independence:** Denormalization is not required in this design, as path-based ownership removes the need for `get()` calls to determine access.  Each entity's access is directly tied to the user ID in the path."
   }
 }

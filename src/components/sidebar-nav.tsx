@@ -16,7 +16,6 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
-  CreditCard,
 } from "lucide-react";
 
 const menuItems = [
@@ -29,11 +28,6 @@ const menuItems = [
     href: "/analytics",
     label: "Analytics",
     icon: BarChart3,
-  },
-  {
-    href: "/billing",
-    label: "Billing",
-    icon: CreditCard,
   },
   {
     href: "/settings",

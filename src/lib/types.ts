@@ -19,6 +19,7 @@ export type QuestionDTO = Omit<Question, 'id'>;
 
 export type Form = {
   id: string;
+  userId: string;
   title: string;
   description: string;
   questions: QuestionDTO[];

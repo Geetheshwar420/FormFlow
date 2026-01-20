@@ -17,6 +17,7 @@ import { useAuth } from "@/firebase/auth/use-auth";
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
 import { useState, useEffect } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 export function Header() {
   const { user, signOut, isUserLoading } = useAuth();
@@ -33,59 +34,60 @@ export function Header() {
       <div className="flex items-center gap-4">
         <ThemeToggle />
 
-        {isUserLoading ? (
-           <Avatar className="h-10 w-10 animate-pulse bg-muted rounded-full" />
-        ) : user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                   {user.photoURL ? (
-                    <Image
-                      src={user.photoURL}
-                      width={40}
-                      height={40}
-                      alt="User Avatar"
-                      data-ai-hint="person face"
-                      className="rounded-full"
-                    />
-                  ) : (
-                     <AvatarFallback className="rounded-full">{user.email?.[0].toUpperCase()}</AvatarFallback>
-                  )}
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Link href="/profile" passHref>
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-              </Link>
-              <Link href="/billing" passHref>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
-              </Link>
-              <Link href="/settings" passHref>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-              </Link>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link href="/login" passHref>
-              <Button variant="outline">
-                <LogIn />
-                Login
-              </Button>
-            </Link>
-            <Link href="/signup" passHref>
-              <Button>
-                <UserPlus />
-                Sign Up
-              </Button>
-            </Link>
-          </div>
+        {isClient && (
+          <>
+            {isUserLoading ? (
+              <Skeleton className="h-10 w-10 rounded-full" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      {user.photoURL ? (
+                        <Image
+                          src={user.photoURL}
+                          width={40}
+                          height={40}
+                          alt="User Avatar"
+                          data-ai-hint="person face"
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <AvatarFallback className="rounded-full">{user.email?.[0].toUpperCase()}</AvatarFallback>
+                      )}
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/profile" passHref>
+                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                  </Link>
+                  <Link href="/settings" passHref>
+                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link href="/login" passHref>
+                  <Button variant="outline">
+                    <LogIn />
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/signup" passHref>
+                  <Button>
+                    <UserPlus />
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </div>
     </header>
