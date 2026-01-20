@@ -25,6 +25,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
+import { useFirestore } from '@/firebase/provider';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+
 
 // Internal Input component from the provided code
 interface InputProps {
@@ -92,10 +95,11 @@ const AppInput = (props: InputProps) => {
 // The main page component
 export default function LoginPage() {
   const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
 
-  const [email, setEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
 
@@ -127,8 +131,37 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let emailToSignIn = loginIdentifier;
+
+    if (!loginIdentifier.includes('@')) {
+        try {
+            const usersRef = collection(firestore, 'users');
+            const q = query(usersRef, where("username", "==", loginIdentifier));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'User not found.',
+                    variant: 'destructive'
+                });
+                return;
+            }
+            const userDoc = querySnapshot.docs[0];
+            emailToSignIn = userDoc.data().email;
+
+        } catch (err) {
+            toast({
+                title: 'Error',
+                description: 'Could not verify username.',
+                variant: 'destructive'
+            });
+            return;
+        }
+    }
+
     try {
-        await signIn(email, password);
+        await signIn(emailToSignIn, password);
         toast({
             title: 'Signed in.',
             description: "Welcome back! You're logged in.",
@@ -218,7 +251,7 @@ export default function LoginPage() {
               </div>
               
               <div className='grid gap-4 items-center'>
-                  <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
+                  <AppInput placeholder="Email or Username" type="text" value={loginIdentifier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginIdentifier(e.target.value)} />
                   <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
               </div>
 
@@ -232,7 +265,7 @@ export default function LoginPage() {
                   disabled={isAuthLoading}
                   className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                {isAuthLoading && !email ? null : isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
+                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
                 <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
                   <div className="relative h-full w-8 bg-white/20" />
                 </div>

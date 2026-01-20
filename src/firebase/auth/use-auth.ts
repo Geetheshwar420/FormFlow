@@ -12,19 +12,36 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword,
+  updateProfile,
 } from 'firebase/auth';
 import { useFirebase, useUser as useFirebaseUser } from '@/firebase/provider';
 import { FirebaseError } from 'firebase/app';
+import { doc, setDoc } from 'firebase/firestore';
 
 export function useAuth() {
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
   const { user, isUserLoading, userError } = useFirebaseUser();
   const [isAuthLoading, setAuthLoading] = useState(false);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName: string, username: string) => {
     setAuthLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Update the user's profile with the display name
+      await updateProfile(user, { displayName });
+
+      // Create a document in the 'users' collection
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDoc(userDocRef, {
+        id: user.uid,
+        email: user.email,
+        username: username,
+        displayName: displayName,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       if (error instanceof FirebaseError) {
         throw new Error(error.message);

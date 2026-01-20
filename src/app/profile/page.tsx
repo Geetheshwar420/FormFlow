@@ -11,14 +11,25 @@ import { useAuth } from "@/firebase/auth/use-auth";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useDoc } from "@/firebase/firestore/use-doc";
+import { useFirestore, useMemoFirebase } from "@/firebase/provider";
+import { doc } from "firebase/firestore";
 
 export default function ProfilePage() {
   const { user, changePassword, isAuthLoading } = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const userDocRef = useMemoFirebase(() => {
+      if (!user) return null;
+      return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<{username: string}>(userDocRef);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,12 +93,16 @@ export default function ProfilePage() {
               <Button variant="outline">Change Photo</Button>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={user?.email || ''} disabled />
+              <Label htmlFor="displayName">Full Name</Label>
+              <Input id="displayName" placeholder="Your full name" defaultValue={user?.displayName || ''} />
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input id="username" placeholder="Your username" value={userProfile?.username || ''} disabled />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" placeholder="Your username" defaultValue={user?.displayName || ''} />
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" value={user?.email || ''} disabled />
             </div>
             <Button>Save Changes</Button>
           </CardContent>

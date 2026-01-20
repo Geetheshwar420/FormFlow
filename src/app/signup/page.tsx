@@ -82,6 +82,8 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -114,7 +116,7 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-        await signUp(email, password);
+        await signUp(email, password, fullName, username);
         toast({
             title: 'Account created.',
             description: "Welcome! You have been signed up successfully.",
@@ -167,7 +169,7 @@ export default function SignupPage() {
 
   return (
     <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
-      <div className='w-full max-w-4xl flex justify-between h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
+      <div className='w-full max-w-4xl flex justify-between h-auto md:h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
         <div
           className='w-full lg:w-1/2 p-8 flex flex-col justify-center h-full relative overflow-hidden'
           onMouseMove={handleMouseMove}
@@ -190,6 +192,8 @@ export default function SignupPage() {
               </div>
               
               <div className='grid gap-4 items-center'>
+                  <AppInput placeholder="Full Name" type="text" value={fullName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)} />
+                  <AppInput placeholder="Username" type="text" value={username} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)} />
                   <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
                   <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
               </div>

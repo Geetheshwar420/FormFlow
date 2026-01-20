@@ -19,6 +19,10 @@
           "type": "string",
           "description": "User's username for login."
         },
+        "displayName": {
+          "type": "string",
+          "description": "User's full name."
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp indicating when the user account was created.",
@@ -34,6 +38,7 @@
         "id",
         "email",
         "username",
+        "displayName",
         "createdAt",
         "updatedAt"
       ]
