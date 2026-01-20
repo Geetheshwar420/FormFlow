@@ -16,6 +16,7 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
+  CreditCard,
 } from "lucide-react";
 
 const menuItems = [
@@ -28,6 +29,11 @@ const menuItems = [
     href: "/analytics",
     label: "Analytics",
     icon: BarChart3,
+  },
+  {
+    href: "/billing",
+    label: "Billing",
+    icon: CreditCard,
   },
   {
     href: "/settings",
@@ -55,7 +61,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={item.href === '/' ? pathname === item.href : pathname.startsWith(item.href)}
                   tooltip={item.label}
                 >
                   <item.icon />
@@ -70,7 +76,7 @@ export function SidebarNav() {
          <SidebarMenu>
             <SidebarMenuItem>
                 <Link href="/help">
-                    <SidebarMenuButton tooltip="Help">
+                    <SidebarMenuButton tooltip="Help" isActive={pathname === '/help'}>
                         <HelpCircle/>
                         <span>Help & Support</span>
                     </SidebarMenuButton>

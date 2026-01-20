@@ -11,8 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Bell, LogIn, UserPlus } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { LogIn, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/firebase/auth/use-auth";
 import Link from "next/link";
@@ -24,20 +23,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <SidebarTrigger className="md:hidden" />
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search forms..."
-          className="pl-8 sm:w-[300px] md:w-[200px] lg:w-[300px]"
-        />
-      </div>
+      <div className="flex-1" />
       <div className="flex items-center gap-4">
         <ThemeToggle />
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Toggle notifications</span>
-        </Button>
 
         {isUserLoading ? (
            <Avatar className="h-10 w-10 animate-pulse bg-muted" />
@@ -63,9 +51,15 @@ export function Header() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <Link href="/profile" passHref>
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+              </Link>
+              <Link href="/billing" passHref>
+                <DropdownMenuItem>Billing</DropdownMenuItem>
+              </Link>
+              <Link href="/settings" passHref>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
             </DropdownMenuContent>
