@@ -12,6 +12,19 @@ import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Label } from '@/components/ui/label';
 
 // Internal Input component from the provided code
 interface InputProps {
@@ -78,12 +91,13 @@ const AppInput = (props: InputProps) => {
 
 // The main page component
 export default function LoginPage() {
-  const { user, isUserLoading, signIn, isAuthLoading } = useAuth();
+  const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     if (user && !isUserLoading) {
@@ -128,24 +142,45 @@ export default function LoginPage() {
         });
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      toast({
+        title: 'Signed in with Google.',
+        description: "Welcome! You're logged in.",
+      });
+      router.push('/dashboard');
+    } catch (err: any) {
+      toast({
+        title: 'Authentication Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+        toast({ title: "Email required", description: "Please enter your email address.", variant: "destructive" });
+        return;
+    }
+    try {
+        await sendPasswordReset(resetEmail);
+        toast({ title: "Password Reset Email Sent", description: "Check your inbox for a password reset link." });
+    } catch (err: any) {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  }
   
   const loginImage = PlaceHolderImages.find(p => p.id === 'login-image-1');
 
   const socialIcons = [
     {
-      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4zm9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3"/></svg>,
-      href: '#',
+      name: 'Google',
+      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.612-3.512-11.283-8.192l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.712 34.755 44 30.038 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>,
+      onClick: handleGoogleSignIn,
       gradient: 'bg-[var(--color-bg)]',
-    },
-    {
-      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6.94 5a2 2 0 1 1-4-.002a2 2 0 0 1 4 .002M7 8.48H3V21h4zm6.32 0H9.34V21h3.94v-6.57c0-3.66 4.77-4 4.77 0V21H22v-7.93c0-6.17-7.06-5.94-8.72-2.91z"/></svg>,
-      href: '#',
-      bg: 'bg-[var(--color-bg)]',
-    },
-    {
-      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M9.198 21.5h4v-8.01h3.604l.396-3.98h-4V7.5a1 1 0 0 1 1-1h3v-4h-3a5 5 0 0 0-5 5v2.01h-2l-.396 3.98h2.396z"/></svg>,
-      href: '#',
-      bg: 'bg-[var(--color-bg)]',
     }
   ];
 
@@ -158,6 +193,7 @@ export default function LoginPage() {
   }
 
   return (
+    <Dialog>
     <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
       <div className='w-full max-w-4xl flex justify-between h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
         <div
@@ -179,36 +215,44 @@ export default function LoginPage() {
             <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
               <div className='grid gap-4 mb-2'>
                 <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Sign in</h1>
-                <div className="social-container">
+                <p className='text-sm text-[var(--color-text-secondary)]'>Sign in with your social account</p>
+                <div className="social-container mt-2">
                   <div className="flex items-center justify-center">
                     <ul className="flex gap-3 md:gap-4">
                       {socialIcons.map((social, index) => (
                         <li key={index} className="list-none">
-                          <a
-                            href={social.href}
+                          <button
+                            type="button"
+                            onClick={social.onClick}
                             className="w-[2.5rem] h-[2.5rem] bg-[var(--color-bg-2)] rounded-full flex justify-center items-center relative z-[1] border-2 border-[var(--color-border)] overflow-hidden group"
                           >
                             <div
-                              className={`absolute inset-0 w-full h-full ${social.gradient || social.bg} scale-y-0 origin-bottom transition-transform duration-500 ease-in-out group-hover:scale-y-100`}
+                              className={`absolute inset-0 w-full h-full ${social.gradient || 'bg-[var(--color-bg)]'} scale-y-0 origin-bottom transition-transform duration-500 ease-in-out group-hover:scale-y-100`}
                             />
                             <span className="text-[1.5rem] text-[var(--color-text-secondary)] transition-all duration-500 ease-in-out z-[2] group-hover:text-[var(--color-text-primary)]">
                               {social.icon}
                             </span>
-                          </a>
+                          </button>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
               </div>
-              <span className='text-sm text-[var(--color-text-secondary)]'>or use your account</span>
+              <div className="flex items-center my-2">
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or use your account</span>
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+              </div>
               
-              <div className='grid gap-4 items-center mt-4'>
+              <div className='grid gap-4 items-center'>
                   <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
                   <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
               </div>
 
-              <a href="#" className='font-light text-sm md:text-md text-[var(--color-text-secondary)]'>Forgot your password?</a>
+              <DialogTrigger asChild>
+                <button type="button" className='font-light text-sm md:text-md text-[var(--color-text-secondary)] hover:underline'>Forgot your password?</button>
+              </DialogTrigger>
 
               <div className='flex gap-4 justify-center items-center mt-4'>
                  <button 
@@ -216,7 +260,7 @@ export default function LoginPage() {
                   disabled={isAuthLoading}
                   className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
+                {isAuthLoading && !email ? null : isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
                 <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
                   <div className="relative h-full w-8 bg-white/20" />
                 </div>
@@ -245,5 +289,38 @@ export default function LoginPage() {
        </div>
       </div>
     </div>
+    <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Reset Password</DialogTitle>
+          <DialogDescription>
+            Enter your email address and we will send you a link to reset your password.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="email-reset" className="text-right">
+              Email
+            </Label>
+            <Input
+              id="email-reset"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              className="col-span-3"
+              placeholder="you@example.com"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type="button" onClick={handlePasswordReset} disabled={isAuthLoading}>
+            {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
