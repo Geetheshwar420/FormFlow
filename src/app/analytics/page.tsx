@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/firebase/auth/use-auth";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
-import { collection } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import type { Form } from "@/lib/types";
 import { BarChart, FileText, CheckSquare } from "lucide-react";
 import Link from "next/link";
@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
     const { user } = useAuth();
     const firestore = useFirestore();
 
-    const formsCollection = useMemoFirebase(() => user ? collection(firestore, `users/${user.uid}/forms`) : null, [firestore, user]);
+    const formsCollection = useMemoFirebase(() => user ? query(collection(firestore, 'forms'), where('userId', '==', user.uid)) : null, [firestore, user]);
     const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
 
     if (isLoading) {

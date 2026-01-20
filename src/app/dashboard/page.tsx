@@ -11,20 +11,60 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { BarChart, Edit, Share2, PlusCircle, FileText } from "lucide-react";
+import { BarChart3, Edit, Trash2, PlusCircle, FileText, Calendar, Share2, Eye } from "lucide-react";
 import { useAuth } from "@/firebase/auth/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
-import { collection } from "firebase/firestore";
+import { collection, query, where, doc } from "firebase/firestore";
 import type { Form } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useState } from "react";
+
 
 function Dashboard() {
   const { user } = useAuth();
   const firestore = useFirestore();
-  const formsCollection = useMemoFirebase(() => user ? collection(firestore, `users/${user.uid}/forms`) : null, [firestore, user]);
+  const { toast } = useToast();
+  const [formToDelete, setFormToDelete] = useState<string | null>(null);
+
+  const formsCollection = useMemoFirebase(() => user ? query(collection(firestore, 'forms'), where('userId', '==', user.uid)) : null, [firestore, user]);
   const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
+
+  const handleShare = (formId: string) => {
+    const url = `${window.location.origin}/view/${formId}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link Copied!",
+      description: "The form link has been copied to your clipboard.",
+    });
+  };
+  
+  const handleDelete = () => {
+    if (formToDelete) {
+      const formRef = doc(firestore, 'forms', formToDelete);
+      deleteDocumentNonBlocking(formRef);
+      toast({
+        title: "Form Deleted",
+        description: "The form has been successfully deleted.",
+      });
+      setFormToDelete(null);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -61,14 +101,28 @@ function Dashboard() {
 
   return (
     <AuthGuard>
+       <AlertDialog>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              form and all of its responses.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setFormToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       <div className="flex flex-col gap-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold font-headline tracking-tight">
-              Dashboard
+              Your Forms
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your forms and view responses.
+              Manage your surveys and analyze responses.
             </p>
           </div>
           <Link href="/forms/create">
@@ -87,40 +141,53 @@ function Dashboard() {
                 className="flex flex-col hover:shadow-lg transition-shadow duration-300"
               >
                 <CardHeader>
-                  <CardTitle className="font-headline text-xl truncate">
-                    {form.title}
-                  </CardTitle>
-                  <CardDescription className="truncate">
-                    {form.description}
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="font-headline text-xl truncate">
+                      {form.title}
+                    </CardTitle>
+                    <Badge variant="outline">Draft</Badge>
+                  </div>
+                  <CardDescription className="truncate h-4">
+                    {form.description || "No description provided."}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">
                   <div className="flex justify-between items-center text-sm text-muted-foreground">
-                    <span>Responses</span>
-                    <Badge variant="secondary">{form.responseCount || 0}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-                    <span>Created</span>
-                    <span className="font-mono text-xs">{new Date(form.createdAt).toLocaleDateString()}</span>
+                    <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(form.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        <span>{form.questions.length} Questions</span>
+                    </div>
                   </div>
                 </CardContent>
-                <CardFooter className="flex-col sm:flex-row gap-2">
+                <CardFooter className="flex items-center gap-2 bg-muted/50 p-3">
                   <Link href={`/forms/edit/${form.id}`} passHref>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    <Button variant="ghost" size="icon" title="Edit">
                       <Edit />
-                      Edit
                     </Button>
                   </Link>
                   <Link href={`/analytics/${form.id}`} passHref>
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                      <BarChart />
-                      Analytics
+                    <Button variant="ghost" size="icon" title="Analytics">
+                      <BarChart3 />
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="sm" className="w-full sm:w-auto ml-auto">
+                   <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => setFormToDelete(form.id)}>
+                        <Trash2 />
+                      </Button>
+                    </AlertDialogTrigger>
+                  <Button variant="ghost" size="icon" title="Share" onClick={() => handleShare(form.id)}>
                     <Share2 />
-                    Share
                   </Button>
+                  <Link href={`/view/${form.id}`} passHref className="ml-auto">
+                    <Button>
+                      <Eye />
+                      View
+                    </Button>
+                  </Link>
                 </CardFooter>
               </Card>
             ))}
@@ -144,6 +211,7 @@ function Dashboard() {
           </div>
         )}
       </div>
+      </AlertDialog>
     </AuthGuard>
   );
 }

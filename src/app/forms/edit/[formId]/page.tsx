@@ -18,11 +18,16 @@ function EditForm() {
     const formId = params.formId as string;
 
     const formRef = useMemoFirebase(() => {
-        if (!user || !formId) return null;
-        return doc(firestore, `users/${user.uid}/forms/${formId}`);
-    }, [firestore, user, formId]);
+        if (!formId) return null;
+        return doc(firestore, `forms/${formId}`);
+    }, [firestore, formId]);
 
     const { data: formData, isLoading } = useDoc<Omit<Form, 'id'>>(formRef);
+    
+    // Authorization check
+    if (!isLoading && formData && user && formData.userId !== user.uid) {
+        return <div>You are not authorized to edit this form.</div>;
+    }
 
     if (isLoading) {
         return (

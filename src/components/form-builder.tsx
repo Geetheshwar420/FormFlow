@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Form, Question, QuestionType } from "@/lib/types";
+import type { Form, Question, QuestionType, FormResponse } from "@/lib/types";
 import {
   PlusCircle,
   Trash2,
@@ -24,10 +24,14 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase/auth/use-auth";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { collection, doc } from "firebase/firestore";
 import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useRouter } from "next/navigation";
+import { FormViewer } from "./form-viewer";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Skeleton } from "./ui/skeleton";
 
 const questionTypes: {
   value: QuestionType;
@@ -54,7 +58,7 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
   const [title, setTitle] = useState(initialData?.title || "Untitled Form");
   const [description, setDescription] = useState(initialData?.description || "");
   const [questions, setQuestions] = useState<Question[]>(() =>
-    initialData?.questions.map((q) => ({ ...q, id: crypto.randomUUID() })) || []
+    initialData?.questions.map((q) => ({ ...q, id: q.id || crypto.randomUUID() })) || []
   );
 
   const addQuestion = (type: QuestionType) => {
@@ -102,12 +106,12 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
     const formPayload = {
       title,
       description,
-      questions: questions.map(({ id, ...rest }) => rest), // Remove client-side id before saving
+      questions, // Persist questions with their IDs
     };
 
     try {
       if (initialData?.id) {
-        const formRef = doc(firestore, `users/${user.uid}/forms/${initialData.id}`);
+        const formRef = doc(firestore, `forms/${initialData.id}`);
         const formToUpdate = {
           ...formPayload,
           updatedAt: new Date().toISOString(),
@@ -118,18 +122,20 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           description: "Your form has been successfully updated.",
         });
       } else {
-        const formsCollection = collection(firestore, `users/${user.uid}/forms`);
+        const formsCollection = collection(firestore, `forms`);
         const formToSave = {
           ...formPayload,
           userId: user.uid,
           responseCount: 0,
           createdAt: new Date().toISOString(),
         };
-        await addDocumentNonBlocking(formsCollection, formToSave);
+        const newFormRef = await addDocumentNonBlocking(formsCollection, formToSave);
         toast({
           title: "Form saved!",
           description: "Your form has been successfully saved.",
         });
+        router.replace(`/forms/edit/${newFormRef.id}`);
+        return; // prevent second router push
       }
       router.push('/dashboard');
     } catch (error) {
@@ -141,6 +147,13 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
       });
     }
   };
+
+  const responsesRef = useMemoFirebase(() => {
+    if (!initialData?.id) return null;
+    return collection(firestore, `forms/${initialData.id}/responses`);
+  }, [firestore, initialData?.id]);
+
+  const { data: responses, isLoading: areResponsesLoading } = useCollection<Omit<FormResponse, 'id'>>(responsesRef);
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,7 +170,7 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
         </div>
         <div className="flex items-center gap-2">
            <Button onClick={saveForm}>
-            <Share className="mr-2 h-4 w-4" /> {initialData ? 'Save Changes' : 'Share / Publish'}
+            <Share className="mr-2 h-4 w-4" /> {initialData ? 'Save Changes' : 'Save Form'}
           </Button>
         </div>
       </div>
@@ -166,7 +179,9 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
         <TabsList>
           <TabsTrigger value="builder"><Pencil className="mr-2 h-4 w-4" />Builder</TabsTrigger>
           <TabsTrigger value="preview"><Eye className="mr-2 h-4 w-4" />Preview</TabsTrigger>
-          <TabsTrigger value="responses"><BarChart3 className="mr-2 h-4 w-4" />Responses</TabsTrigger>
+          <TabsTrigger value="responses" disabled={!initialData?.id}>
+            <BarChart3 className="mr-2 h-4 w-4" />Responses
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="builder" className="mt-6">
           <div className="flex flex-col gap-6">
@@ -258,16 +273,56 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           </div>
         </TabsContent>
         <TabsContent value="preview" className="mt-6">
-            <Card>
-                <CardContent className="pt-6">
-                    <p>Form preview will be displayed here.</p>
-                </CardContent>
-            </Card>
+            <FormViewer form={{id: initialData?.id || 'preview', title, description, questions}} isPreview />
         </TabsContent>
         <TabsContent value="responses" className="mt-6">
              <Card>
-                <CardContent className="pt-6">
-                    <p>Form responses will be displayed here.</p>
+                <CardHeader>
+                  <CardTitle>Responses</CardTitle>
+                  <CardDescription>A list of all submissions for this form.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {areResponsesLoading ? (
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                                <TableHead><Skeleton className="h-5 w-32" /></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {[...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                  ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Response ID</TableHead>
+                                <TableHead>Submission Date</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {responses && responses.length > 0 ? (
+                                responses.map(response => (
+                                    <TableRow key={response.id}>
+                                        <TableCell className="font-mono">{response.id}</TableCell>
+                                        <TableCell>{new Date(response.submittedAt).toLocaleString()}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="text-center">No responses yet.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
             </Card>
         </TabsContent>

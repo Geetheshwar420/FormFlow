@@ -10,15 +10,8 @@ import { useDoc } from "@/firebase/firestore/use-doc";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { collection, doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
-import type { Form } from "@/lib/types";
+import type { Form, FormResponse } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Assuming a Response type
-type FormResponse = {
-    id: string;
-    submittedAt: string;
-    // other fields from your Response entity
-}
 
 export default function FormAnalyticsPage() {
     const { user } = useAuth();
@@ -27,14 +20,14 @@ export default function FormAnalyticsPage() {
     const formId = params.formId as string;
 
     const formRef = useMemoFirebase(() => {
-        if (!user || !formId) return null;
-        return doc(firestore, `users/${user.uid}/forms/${formId}`);
-    }, [firestore, user, formId]);
+        if (!formId) return null;
+        return doc(firestore, `forms/${formId}`);
+    }, [firestore, formId]);
 
     const responsesRef = useMemoFirebase(() => {
-        if(!user || !formId) return null;
-        return collection(firestore, `users/${user.uid}/forms/${formId}/responses`);
-    }, [firestore, user, formId]);
+        if(!formId) return null;
+        return collection(firestore, `forms/${formId}/responses`);
+    }, [firestore, formId]);
 
     const { data: formData, isLoading: isFormLoading } = useDoc<Omit<Form, 'id'>>(formRef);
     const { data: responses, isLoading: areResponsesLoading } = useCollection<Omit<FormResponse, 'id'>>(responsesRef);
@@ -84,9 +77,14 @@ export default function FormAnalyticsPage() {
             </AuthGuard>
         );
     }
+    
+    // Authorization check
+    if (!isFormLoading && formData && user && formData.userId !== user.uid) {
+        return <AuthGuard><div>You are not authorized to view these analytics.</div></AuthGuard>;
+    }
 
     if (!formData) {
-        return <div>Form not found.</div>;
+        return <AuthGuard><div>Form not found.</div></AuthGuard>;
     }
 
     return (

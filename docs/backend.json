@@ -98,10 +98,6 @@
           "type": "string",
           "description": "Unique identifier for the question entity."
         },
-        "formId": {
-          "type": "string",
-          "description": "Reference to Form. (Relationship: Form 1:N Question)"
-        },
         "type": {
           "type": "string",
           "description": "Type of the question (e.g., text, multiple choice, rating, file upload)."
@@ -120,19 +116,13 @@
         "required": {
           "type": "boolean",
           "description": "Indicates if the question is required."
-        },
-        "order": {
-          "type": "number",
-          "description": "The position of the question in form"
         }
       },
       "required": [
         "id",
-        "formId",
         "type",
         "text",
-        "required",
-        "order"
+        "required"
       ]
     },
     "Response": {
@@ -149,50 +139,33 @@
           "type": "string",
           "description": "Reference to Form. (Relationship: Form 1:N Response)"
         },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User. (Relationship: User 1:N Response). Nullable for anonymous submissions."
-        },
         "submittedAt": {
           "type": "string",
           "description": "Timestamp indicating when the response was submitted.",
           "format": "date-time"
+        },
+        "answers": {
+          "type": "array",
+          "description": "An array of answer objects embedded in the response.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionId": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": ["questionId", "value"]
+          }
         }
       },
       "required": [
         "id",
         "formId",
-        "submittedAt"
-      ]
-    },
-    "Answer": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Answer",
-      "type": "object",
-      "description": "Represents a user's answer to a specific question in a form response.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the answer entity."
-        },
-        "responseId": {
-          "type": "string",
-          "description": "Reference to Response. (Relationship: Response 1:N Answer)"
-        },
-        "questionId": {
-          "type": "string",
-          "description": "Reference to Question. (Relationship: Question 1:N Answer)"
-        },
-        "value": {
-          "type": "string",
-          "description": "The user's answer to the question."
-        }
-      },
-      "required": [
-        "id",
-        "responseId",
-        "questionId",
-        "value"
+        "submittedAt",
+        "answers"
       ]
     },
     "Theme": {
@@ -249,52 +222,6 @@
         "name",
         "value"
       ]
-    },
-    "Analytics": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Analytics",
-      "type": "object",
-      "description": "Represents form usage analytics.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the analytics entity."
-        },
-        "formId": {
-          "type": "string",
-          "description": "Reference to Form. (Relationship: Form 1:N Analytics)"
-        },
-        "views": {
-          "type": "number",
-          "description": "Number of times the form has been viewed."
-        },
-        "submissions": {
-          "type": "number",
-          "description": "Number of times the form has been submitted."
-        },
-        "completionRate": {
-          "type": "number",
-          "description": "Completion rate of the form."
-        },
-        "averageTime": {
-          "type": "number",
-          "description": "Average time taken to complete the form."
-        },
-        "date": {
-          "type": "string",
-          "description": "Date of analytics data.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "formId",
-        "views",
-        "submissions",
-        "completionRate",
-        "averageTime",
-        "date"
-      ]
     }
   },
   "auth": {
@@ -322,18 +249,14 @@
         }
       },
       {
-        "path": "/users/{userId}/forms/{formId}",
+        "path": "/forms/{formId}",
         "definition": {
           "entityName": "Form",
           "schema": {
             "$ref": "#/backend/entities/Form"
           },
-          "description": "Stores forms created by each user. Path-based ownership is used.",
+          "description": "Stores forms created by all users in a single top-level collection.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
             {
               "name": "formId",
               "description": "The unique identifier of the form."
@@ -342,7 +265,7 @@
         }
       },
       {
-        "path": "/users/{userId}/forms/{formId}/responses/{responseId}",
+        "path": "/forms/{formId}/responses/{responseId}",
         "definition": {
           "entityName": "Response",
           "schema": {
@@ -351,44 +274,12 @@
           "description": "Stores responses submitted for each form.",
           "params": [
             {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
               "name": "formId",
               "description": "The unique identifier of the form."
             },
             {
               "name": "responseId",
               "description": "The unique identifier of the response."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/forms/{formId}/responses/{responseId}/answers/{answerId}",
-        "definition": {
-          "entityName": "Answer",
-          "schema": {
-            "$ref": "#/backend/entities/Answer"
-          },
-          "description": "Stores answers to questions within a form response.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "formId",
-              "description": "The unique identifier of the form."
-            },
-            {
-              "name": "responseId",
-              "description": "The unique identifier of the response."
-            },
-            {
-              "name": "answerId",
-              "description": "The unique identifier of the answer."
             }
           ]
         }
@@ -429,26 +320,6 @@
             {
               "name": "settingId",
               "description": "The unique identifier of the setting."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/forms/{formId}/analytics/{analyticsId}",
-        "definition": {
-          "entityName": "Analytics",
-          "schema": {
-            "$ref": "#/backend/entities/Analytics"
-          },
-          "description": "Stores analytics data associated with each form.",
-          "params": [
-            {
-              "name": "formId",
-              "description": "The unique identifier of the form."
-            },
-            {
-              "name": "analyticsId",
-              "description": "The unique identifier of the analytics."
             }
           ]
         }
