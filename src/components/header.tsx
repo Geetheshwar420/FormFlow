@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogIn, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "@/firebase/auth/use-auth";
@@ -28,13 +28,13 @@ export function Header() {
   
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-      {isClient && <SidebarTrigger />}
+      {isClient ? <SidebarTrigger /> : <div className="h-7 w-7" />}
       <div className="flex-1" />
       <div className="flex items-center gap-4">
         <ThemeToggle />
 
         {isUserLoading ? (
-           <Avatar className="h-10 w-10 animate-pulse bg-muted" />
+           <Avatar className="h-10 w-10 animate-pulse bg-muted rounded-full" />
         ) : user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -47,9 +47,10 @@ export function Header() {
                       height={40}
                       alt="User Avatar"
                       data-ai-hint="person face"
+                      className="rounded-full"
                     />
                   ) : (
-                     <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+                     <AvatarFallback className="rounded-full">{user.email?.[0].toUpperCase()}</AvatarFallback>
                   )}
                 </Avatar>
               </Button>
