@@ -1,0 +1,83 @@
+"use client";
+
+import Link from "next/link";
+import {
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarContent,
+  SidebarFooter,
+} from "@/components/ui/sidebar";
+import { FormFlowLogo } from "./icons";
+import { usePathname } from "next/navigation";
+import {
+  Home,
+  BarChart3,
+  Settings,
+  HelpCircle,
+} from "lucide-react";
+
+const menuItems = [
+  {
+    href: "/",
+    label: "Dashboard",
+    icon: Home,
+  },
+  {
+    href: "/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+  },
+];
+
+export function SidebarNav() {
+  const pathname = usePathname();
+
+  return (
+    <>
+      <SidebarHeader className="p-4">
+        <Link href="/" className="flex items-center gap-2">
+          <FormFlowLogo className="w-8 h-8 text-primary" />
+          <span className="font-headline text-2xl font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            FormFlow
+          </span>
+        </Link>
+      </SidebarHeader>
+      <SidebarContent className="p-2">
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href}>
+                <SidebarMenuButton
+                  isActive={pathname === item.href}
+                  tooltip={item.label}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter className="p-2">
+         <SidebarMenu>
+            <SidebarMenuItem>
+                <Link href="/help">
+                    <SidebarMenuButton tooltip="Help">
+                        <HelpCircle/>
+                        <span>Help & Support</span>
+                    </SidebarMenuButton>
+                </Link>
+            </SidebarMenuItem>
+         </SidebarMenu>
+      </SidebarFooter>
+    </>
+  );
+}
