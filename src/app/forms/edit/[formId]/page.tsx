@@ -1,5 +1,6 @@
 'use client';
 
+import { AuthGuard } from "@/components/auth-guard";
 import { FormBuilder } from "@/components/form-builder";
 import { useAuth } from "@/firebase/auth/use-auth";
 import { useDoc } from "@/firebase/firestore/use-doc";
@@ -8,7 +9,7 @@ import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Form } from '@/lib/types';
 
-export default function EditFormPage() {
+function EditForm() {
     const { user } = useAuth();
     const firestore = useFirestore();
     const params = useParams();
@@ -30,4 +31,13 @@ export default function EditFormPage() {
     }
 
     return <FormBuilder initialData={{ ...formData, id: formId }} />;
+}
+
+
+export default function EditFormPage() {
+    return (
+        <AuthGuard>
+            <EditForm />
+        </AuthGuard>
+    );
 }
