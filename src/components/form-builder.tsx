@@ -5,21 +5,11 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { Question, QuestionType } from "@/lib/types";
+import type { Form, Question, QuestionType } from "@/lib/types";
 import {
   PlusCircle,
   Trash2,
@@ -29,14 +19,17 @@ import {
   Upload,
   FileText,
   BadgeCheck,
-  Wand2,
-  Loader2,
   Copy,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { suggestFormFields } from "@/ai/flows/ai-form-suggestion";
+import { useAuth } from "@/firebase/auth/use-auth";
+import { useFirestore } from "@/firebase/provider";
+import { collection, doc } from "firebase/firestore";
+import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useRouter } from "next/navigation";
+
 
 const questionTypes: {
   value: QuestionType;
@@ -51,16 +44,22 @@ const questionTypes: {
   { value: "file-upload", label: "File Upload", icon: Upload },
 ];
 
-export function FormBuilder() {
-  const { toast } = useToast();
-  const [title, setTitle] = useState("Untitled Form");
-  const [description, setDescription] = useState("");
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
+interface FormBuilderProps {
+  initialData?: Omit<Form, 'id'> & { id: string };
+}
 
-  const [documentSnippet, setDocumentSnippet] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isSuggesting, setIsSuggesting] = useState(false);
+export function FormBuilder({ initialData }: FormBuilderProps) {
+  const { toast } = useToast();
+  const router = useRouter();
+  const { user } = useAuth();
+  const firestore = useFirestore();
+
+  const [title, setTitle] = useState(initialData?.title || "Untitled Form");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [questions, setQuestions] = useState<Question[]>(() => 
+    initialData?.questions.map((q, i) => ({...q, id: `q_${i}_${Date.now()}`})) || []
+  );
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
 
   const addQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
@@ -98,50 +97,57 @@ export function FormBuilder() {
     }
   };
 
-
-  const handleSuggest = async () => {
-    if (!documentSnippet.trim()) {
+  const saveForm = async () => {
+    if (!user) {
       toast({
-        title: "Input required",
-        description: "Please paste a document snippet to get suggestions.",
-        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to save a form.",
+        variant: "destructive"
       });
       return;
     }
-    setIsSuggesting(true);
-    setSuggestions([]);
-    try {
-      const result = await suggestFormFields({ documentSnippet });
-      setSuggestions(result.suggestedFields);
-      if (result.suggestedFields.length === 0) {
-        toast({ title: "No suggestions found." });
-      }
-    } catch (error) {
-      console.error("AI suggestion failed:", error);
-      toast({
-        title: "An error occurred",
-        description: "Failed to get AI suggestions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
 
-  const addSuggestionAsQuestion = (suggestion: string) => {
-    const newQuestion: Question = {
-      id: `q_${Date.now()}`,
-      type: 'text',
-      text: suggestion,
-      required: false,
-    };
-    setQuestions(prev => [...prev, newQuestion]);
-    setSuggestions(prev => prev.filter(s => s !== suggestion));
-    toast({
-        title: "Question added!",
-        description: `"${suggestion}" was added to your form.`,
+    if (initialData?.id) {
+      const formRef = doc(firestore, `users/${user.uid}/forms/${initialData.id}`);
+      const formToUpdate = {
+        title,
+        description,
+        questions: questions.map(({id, ...rest}) => rest),
+        updatedAt: new Date().toISOString(),
+      };
+      setDocumentNonBlocking(formRef, formToUpdate, { merge: true });
+      toast({
+        title: "Form updated!",
+        description: "Your form has been successfully updated.",
       });
+      router.push('/');
+    } else {
+      try {
+        const formsCollection = collection(firestore, `users/${user.uid}/forms`);
+        const formToSave = {
+          title,
+          description,
+          questions: questions.map(({id, ...rest}) => rest), // Remove client-side id before saving
+          responseCount: 0,
+          createdAt: new Date().toISOString(),
+        };
+        await addDocumentNonBlocking(formsCollection, formToSave);
+        toast({
+          title: "Form saved!",
+          description: "Your form has been successfully saved.",
+        });
+        router.push('/');
+      } catch (error) {
+        console.error("Error saving form:", error);
+        toast({
+          title: "Error",
+          description: "There was an error saving your form.",
+          variant: "destructive",
+        });
+      }
+    }
   }
+
 
   const QuestionEditor = ({ question }: { question: Question }) => (
     <div className="space-y-4">
@@ -254,46 +260,7 @@ export function FormBuilder() {
       </div>
 
       <div className="space-y-6 lg:sticky top-24">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <Wand2 className="text-primary" /> AI Suggestions
-            </CardTitle>
-            <CardDescription>
-              Paste a document snippet to get automatic field suggestions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Textarea
-              placeholder="Paste your document snippet here..."
-              value={documentSnippet}
-              onChange={(e) => setDocumentSnippet(e.target.value)}
-              rows={6}
-            />
-            <Button onClick={handleSuggest} disabled={isSuggesting} className="w-full">
-              {isSuggesting ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Wand2 />
-              )}
-              Suggest Fields
-            </Button>
-            {suggestions.length > 0 && (
-              <div className="space-y-2 pt-4">
-                <h4 className="font-semibold">Suggested Fields:</h4>
-                <div className="flex flex-wrap gap-2">
-                    {suggestions.map((s, i) => (
-                    <Button key={i} variant="secondary" size="sm" onClick={() => addSuggestionAsQuestion(s)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {s}
-                    </Button>
-                    ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Button size="lg" className="w-full">Save Form</Button>
+        <Button size="lg" className="w-full" onClick={saveForm}>Save Form</Button>
       </div>
     </div>
   );

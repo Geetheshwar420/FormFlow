@@ -14,11 +14,15 @@ export type Question = {
   required: boolean;
 };
 
+// This represents the structure of a question as stored in Firestore, without the client-side 'id'
+export type QuestionDTO = Omit<Question, 'id'>;
+
 export type Form = {
   id: string;
   title: string;
   description: string;
-  questions: Question[];
+  questions: QuestionDTO[];
   responseCount: number;
   createdAt: string;
+  updatedAt?: string;
 };
