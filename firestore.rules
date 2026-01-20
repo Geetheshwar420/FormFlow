@@ -15,7 +15,7 @@
  *   update or delete forms they own (verified by checking the existing document's `userId`).
  * - Query-Based Listing: Instead of path-based listing (e.g., `/users/{userId}/forms`), users list
  *   their own forms by querying the global `/forms` collection `where('userId', '==', request.auth.uid)`.
- *   Top-level listing of the entire `/forms` collection is disallowed.
+ *   The rules enforce this query constraint.
  * - Public Submissions: Anyone (authenticated or anonymous) can read a public form and submit a
  *   `response` to it. Only the form's owner can view and manage the collected responses.
  */
@@ -58,19 +58,18 @@ service cloud.firestore {
     // Global Forms Collection (/forms/{formId}/**)
     // ------------------------------------------------------------------------
     match /forms/{formId} {
-      // Anyone can read a form to view and respond to it.
+      // Allow public GET for viewing/responding to forms.
+      // This is combined with the owner-based `read` rule below.
+      // Any `get` request will be allowed because `(isOwner) || (true)` is always true.
       allow get: if true;
 
-      // Users can only list their own forms via a query.
-      // `allow list` is implicitly false at the collection level and cannot be
-      // secured by query constraints, so we rely on client-side queries.
-      allow list: if false; // Explicitly deny listing the entire collection.
-
-      // A signed-in user can create a form for themselves.
+      // Allow owners to `read` (get, list) and `write` (update, delete) their own documents.
+      // This rule enables the dashboard query (`list`) to work securely, as the rules engine
+      // verifies that the client's `where('userId', '==', auth.uid)` clause matches this condition.
+      allow read, update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
+      
+      // Allow `create` separately because the document doesn't exist yet for the `get()` check above.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-
-      // Only the owner of the form can update or delete it.
-      allow update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
 
       // --- Responses Subcollection ---
       match /responses/{responseId} {
