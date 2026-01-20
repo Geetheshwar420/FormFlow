@@ -17,6 +17,24 @@
       "description": "A person analyzing data on a computer screen.",
       "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBhbmFseXppbmclMjBkYXRhfGVufDB8fHx8fDE3MTc2MzA3ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "data analysis"
+    },
+    {
+      "id": "landing-hero",
+      "description": "Hero image for the landing page showing an app dashboard.",
+      "imageUrl": "https://images.unsplash.com/photo-1758411898502-013b0cd3421c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxhcHAlMjBkYXNoYm9hcmR8ZW58MHx8fHwxNzY4ODQwNzYzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "app dashboard"
+    },
+    {
+      "id": "landing-feature-1",
+      "description": "Feature image showing a form builder.",
+      "imageUrl": "https://images.unsplash.com/photo-1642420776022-c0f63ee8272a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxmb3JtJTIwYnVpbGRlcnxlbnwwfHx8fDE3Njg5MzY1MTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "form builder"
+    },
+    {
+      "id": "landing-feature-2",
+      "description": "Feature image showing analytics charts.",
+      "imageUrl": "https://images.unsplash.com/photo-1738737271801-d404a575d870?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxhbmFseXRpY3MlMjBjaGFydHN8ZW58MHx8fHwxNzY4OTM2NTEzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "analytics charts"
     }
   ]
 }
