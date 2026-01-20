@@ -28,12 +28,6 @@ export default function LandingPage() {
             >
               Features
             </Link>
-            <Link
-              href="#pricing"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Pricing
-            </Link>
           </nav>
           <div className="flex flex-1 items-center justify-end gap-2">
             <Link
@@ -90,53 +84,6 @@ export default function LandingPage() {
                 title="Easy Sharing"
                 description="Share your forms with a simple link and collect responses from anywhere."
               />
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="py-20">
-          <div className="container text-center">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline mb-4">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-muted-foreground mb-12 max-w-xl mx-auto">
-              Choose a plan that works for you. Get started for free, no credit
-              card required.
-            </p>
-            <div className="flex justify-center">
-              <Card className="max-w-sm w-full">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-headline">
-                    Pro Plan
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold mb-4">
-                    $20<span className="text-lg text-muted-foreground">/mo</span>
-                  </p>
-                  <ul className="space-y-3 text-left">
-                    <li className="flex items-center gap-2">
-                      <Check className="text-primary w-5 h-5" />
-                      <span>Unlimited Forms</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="text-primary w-5 h-5" />
-                      <span>Unlimited Responses</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="text-primary w-5 h-5" />
-                      <span>Advanced Analytics</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Check className="text-primary w-5 h-5" />
-                      <span>Priority Support</span>
-                    </li>
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">Get Started</Button>
-                </CardFooter>
-              </Card>
             </div>
           </div>
         </section>
