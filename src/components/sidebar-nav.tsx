@@ -16,7 +16,10 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
+  User,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/firebase/auth/use-auth";
 
 const menuItems = [
   {
@@ -30,6 +33,11 @@ const menuItems = [
     icon: BarChart3,
   },
   {
+    href: "/profile",
+    label: "Profile",
+    icon: User,
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: Settings,
@@ -38,6 +46,7 @@ const menuItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   return (
     <>
@@ -75,6 +84,12 @@ export function SidebarNav() {
                         <span>Help & Support</span>
                     </SidebarMenuButton>
                 </Link>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Log Out" onClick={signOut}>
+                    <LogOut/>
+                    <span>Log Out</span>
+                </SidebarMenuButton>
             </SidebarMenuItem>
          </SidebarMenu>
       </SidebarFooter>

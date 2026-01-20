@@ -2,14 +2,6 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogIn, UserPlus } from "lucide-react";
 import Image from "next/image";
@@ -20,7 +12,7 @@ import { useState, useEffect } from "react";
 import { Skeleton } from "./ui/skeleton";
 
 export function Header() {
-  const { user, signOut, isUserLoading } = useAuth();
+  const { user, isUserLoading } = useAuth();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -39,38 +31,24 @@ export function Header() {
             {isUserLoading ? (
               <Skeleton className="h-10 w-10 rounded-full" />
             ) : user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      {user.photoURL ? (
-                        <Image
-                          src={user.photoURL}
-                          width={40}
-                          height={40}
-                          alt="User Avatar"
-                          data-ai-hint="person face"
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <AvatarFallback className="rounded-full">{user.email?.[0].toUpperCase()}</AvatarFallback>
-                      )}
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <Link href="/profile" passHref>
-                    <DropdownMenuItem>Profile</DropdownMenuItem>
-                  </Link>
-                  <Link href="/settings" passHref>
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
-                  </Link>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>Log out</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+               <Link href="/profile" passHref>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    {user.photoURL ? (
+                      <Image
+                        src={user.photoURL}
+                        width={40}
+                        height={40}
+                        alt="User Avatar"
+                        data-ai-hint="person face"
+                        className="rounded-full"
+                      />
+                    ) : (
+                      <AvatarFallback className="rounded-full">{user.email?.[0].toUpperCase()}</AvatarFallback>
+                    )}
+                  </Avatar>
+                </Button>
+              </Link>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login" passHref>
