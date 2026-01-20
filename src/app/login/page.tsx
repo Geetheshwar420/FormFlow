@@ -215,34 +215,6 @@ export default function LoginPage() {
             <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
               <div className='grid gap-4 mb-2'>
                 <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Sign in</h1>
-                <p className='text-sm text-[var(--color-text-secondary)]'>Sign in with your social account</p>
-                <div className="social-container mt-2">
-                  <div className="flex items-center justify-center">
-                    <ul className="flex gap-3 md:gap-4">
-                      {socialIcons.map((social, index) => (
-                        <li key={index} className="list-none">
-                          <button
-                            type="button"
-                            onClick={social.onClick}
-                            className="w-[2.5rem] h-[2.5rem] bg-[var(--color-bg-2)] rounded-full flex justify-center items-center relative z-[1] border-2 border-[var(--color-border)] overflow-hidden group"
-                          >
-                            <div
-                              className={`absolute inset-0 w-full h-full ${social.gradient || 'bg-[var(--color-bg)]'} scale-y-0 origin-bottom transition-transform duration-500 ease-in-out group-hover:scale-y-100`}
-                            />
-                            <span className="text-[1.5rem] text-[var(--color-text-secondary)] transition-all duration-500 ease-in-out z-[2] group-hover:text-[var(--color-text-primary)]">
-                              {social.icon}
-                            </span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center my-2">
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or use your account</span>
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
               </div>
               
               <div className='grid gap-4 items-center'>
@@ -266,6 +238,33 @@ export default function LoginPage() {
                 </div>
               </button>
               </div>
+              <div className="flex items-center my-2">
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or</span>
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+              </div>
+              <div className="social-container mt-2">
+                  <div className="flex items-center justify-center">
+                    <ul className="flex gap-3 md:gap-4">
+                      {socialIcons.map((social, index) => (
+                        <li key={index} className="list-none">
+                          <button
+                            type="button"
+                            onClick={social.onClick}
+                            className="w-[2.5rem] h-[2.5rem] bg-[var(--color-bg-2)] rounded-full flex justify-center items-center relative z-[1] border-2 border-[var(--color-border)] overflow-hidden group"
+                          >
+                            <div
+                              className={`absolute inset-0 w-full h-full ${social.gradient || 'bg-[var(--color-bg)]'} scale-y-0 origin-bottom transition-transform duration-500 ease-in-out group-hover:scale-y-100`}
+                            />
+                            <span className="text-[1.5rem] text-[var(--color-text-secondary)] transition-all duration-500 ease-in-out z-[2] group-hover:text-[var(--color-text-primary)]">
+                              {social.icon}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
 
               <div className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
                 Don&apos;t have an account?{' '}

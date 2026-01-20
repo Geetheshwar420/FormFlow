@@ -187,8 +187,33 @@ export default function SignupPage() {
             <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
               <div className='grid gap-4 mb-2'>
                 <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Create Account</h1>
-                <p className='text-sm text-[var(--color-text-secondary)]'>Sign up with your social account</p>
-                <div className="social-container mt-2">
+              </div>
+              
+              <div className='grid gap-4 items-center'>
+                  <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
+                  <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
+              </div>
+
+              <div className='flex gap-4 justify-center items-center mt-4'>
+                 <button 
+                  type="submit"
+                  disabled={isAuthLoading}
+                  className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign Up</span>}
+                <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
+                  <div className="relative h-full w-8 bg-white/20" />
+                </div>
+              </button>
+              </div>
+
+              <div className="flex items-center my-2">
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or</span>
+                <div className="flex-grow border-t border-[var(--color-border)]"></div>
+              </div>
+
+              <div className="social-container">
                   <div className="flex items-center justify-center">
                     <ul className="flex gap-3 md:gap-4">
                       {socialIcons.map((social, index) => (
@@ -210,30 +235,6 @@ export default function SignupPage() {
                     </ul>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center my-2">
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or use your email</span>
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-              </div>
-              
-              <div className='grid gap-4 items-center'>
-                  <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
-                  <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
-              </div>
-
-              <div className='flex gap-4 justify-center items-center mt-4'>
-                 <button 
-                  type="submit"
-                  disabled={isAuthLoading}
-                  className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign Up</span>}
-                <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
-                  <div className="relative h-full w-8 bg-white/20" />
-                </div>
-              </button>
-              </div>
 
               <div className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
                 Already have an account?{' '}
