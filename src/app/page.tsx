@@ -18,7 +18,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container h-14 flex items-center">
           <Link href="/" className="flex items-center gap-2 mr-6">
-            <FormFlowLogo className="w-8 h-8" />
+            <FormFlowLogo className="w-8 h-8 text-primary" />
             <span className="font-bold hidden sm:inline-block">FormFlow</span>
           </Link>
           <nav className="flex items-center gap-4 text-sm font-medium">
@@ -156,7 +156,7 @@ export default function LandingPage() {
         
         <section className="py-20 md:py-32">
             <div className="container text-center">
-                 <FormFlowLogo className="w-12 h-12 mx-auto mb-4" />
+                 <FormFlowLogo className="w-12 h-12 mx-auto mb-4 text-primary" />
                 <h2 className="text-4xl md:text-5xl font-bold font-headline tracking-tighter mb-6">
                     Start Building Better Forms Today
                 </h2>
