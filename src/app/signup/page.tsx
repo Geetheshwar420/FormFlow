@@ -20,7 +20,7 @@ export default function SignupPage() {
   }
   
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <AuthForm type="signup" />
     </div>
   );
