@@ -1,0 +1,193 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model where all primary user data
+ * is stored within a path dedicated to that user (`/users/{userId}`). This path-based security
+ * model simplifies authorization, as access is determined by matching the authenticated user's ID
+ * with the ID in the document path.
+ *
+ * Data Structure: The data is hierarchically organized under `/users/{userId}`. Each user has their
+ * own subcollections for `forms`, `themes`, and `settings`. Form-related data like `questions`,
+ * `responses`, `answers`, and `analytics` are further nested under their respective forms, creating a
+ * clear and isolated data tree for each user.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users can only access data within their own `/users/{userId}` document tree.
+ * - Disallowed User Listing: Top-level listing of the `/users` collection is disabled to protect user privacy.
+ * - Anonymous Form Submissions: To allow public participation, the creation of `responses` and `answers`
+ *   is permitted for any user (authenticated or not). However, only the form's owner can read, update,
+ *   or delete these submissions.
+ * - Corrected Analytics Path: The provided data structure suggested an insecure top-level path
+ *   `/forms/{formId}/analytics`. This has been corrected to `/users/{userId}/forms/{formId}/analytics`
+ *   to ensure analytics data can be properly secured by the form's owner.
+ * - Backend-Managed Analytics: Client-side writes to the `analytics` collection are disabled, assuming
+ *   this data will be aggregated and written by a trusted backend process (e.g., Cloud Functions).
+ *
+ * Denormalization for Authorization: This ruleset relies on path-based ownership, which is a highly
+ * performant strategy. The user's ID (`userId`) is part of the path, so no extra `get()` calls are
+ * needed to verify ownership for most operations. For relational integrity, documents contain a `userId`
+ * or `formId` field that is validated against the document path on creation to ensure data consistency.
+ *
+ * Structural Segregation: The design naturally segregates user data into private trees, making it
+ * inherently secure for list operations. Form responses, while created publicly, are stored within the private tree of the form's owner, segregating them from other users' data.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the given userId.
+     * This is the primary function for enforcing the ownership model.
+     * @param userId The UID of the user to check against.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * A robust check for update/delete operations, ensuring the document exists
+     * before checking for ownership. This prevents unauthorized actions on
+     * non-existent documents and provides clearer security intent.
+     * @param userId The UID of the user to check against.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // ------------------------------------------------------------------------
+    // User Data Collections
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Rules for User documents. Each user has a single document that
+     *              acts as the root for all their private data.
+     * @path /users/{userId}
+     * @allow (create) An authenticated user can create their own user profile document.
+     * @deny (list) No user, authenticated or not, can list all documents in the `/users` collection.
+     * @deny (delete) A user cannot delete their own profile directly from the client.
+     * @principle Enforces self-creation and ownership of a user's root document.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if false;
+
+      /**
+       * @description Rules for a user's collection of Forms.
+       * @path /users/{userId}/forms/{formId}
+       * @allow (create) An authenticated user can create a new form in their own collection.
+       * @deny (get) A user cannot read a form belonging to another user.
+       * @principle Restricts all form operations to the document owner based on the path.
+       */
+      match /forms/{formId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Rules for Questions within a Form.
+         * @path /users/{userId}/forms/{formId}/questions/{questionId}
+         * @allow (update) The form owner can update a question within their form.
+         * @deny (create) A user cannot create a question in another user's form.
+         * @principle Access is inherited from the parent form's ownership.
+         */
+        match /questions/{questionId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && request.resource.data.formId == formId;
+          allow update: if isExistingOwner(userId) && request.resource.data.formId == resource.data.formId;
+          allow delete: if isExistingOwner(userId);
+        }
+
+        /**
+         * @description Rules for Responses to a Form. Allows public creation but restricts
+         *              management to the form owner.
+         * @path /users/{userId}/forms/{formId}/responses/{responseId}
+         * @allow (create) Any user, including anonymous users, can submit a response to a form.
+         * @deny (get) Anonymous users or other authenticated users cannot read responses submitted to a form.
+         * @allow (list) The form owner can list all responses to their form.
+         * @principle Enables public data submission while maintaining private data management for the owner.
+         */
+        match /responses/{responseId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if true; // Any user can create
+          allow update: if isExistingOwner(userId);
+          allow delete: if isExistingOwner(userId);
+
+          /**
+           * @description Rules for individual Answers within a Response. Mirrors the public
+           *              create / private management model of its parent Response.
+           * @path /users/{userId}/forms/{formId}/responses/{responseId}/answers/{answerId}
+           * @allow (create) Any user submitting a response can create answers within it.
+           * @deny (update) A user who submitted a response cannot later modify their answers. Only the form owner can.
+           * @principle Enables public data submission while maintaining private data management for the owner.
+           */
+          match /answers/{answerId} {
+            allow get: if isOwner(userId);
+            allow list: if isOwner(userId);
+            allow create: if true; // Any user can create
+            allow update: if isExistingOwner(userId);
+            allow delete: if isExistingOwner(userId);
+          }
+        }
+
+        /**
+         * @description Rules for Form Analytics data. This data is read-only for the form owner.
+         *              NOTE: The original IR specified a top-level `/forms/{formId}/analytics` path.
+         *              This path is not securable, so it has been moved here to enforce ownership.
+         */
+        match /analytics/{analyticsId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if false;
+          allow update: if false;
+          allow delete: if false;
+        }
+      }
+
+      /**
+       * @description Rules for a user's Theme settings.
+       * @path /users/{userId}/themes/{themeId}
+       * @allow (create) An authenticated user can create their own theme settings.
+       * @deny (get) A user cannot read another user's theme settings.
+       * @principle Enforces document ownership for a user's personal settings.
+       */
+      match /themes/{themeId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for a user's general application Settings.
+       * @path /users/{userId}/settings/{settingId}
+       * @allow (create) An authenticated user can create their own application settings.
+       * @deny (get) A user cannot read another user's application settings.
+       * @principle Enforces document ownership for a user's personal settings.
+       */
+      match /settings/{settingId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.userId == userId;
+        allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}
