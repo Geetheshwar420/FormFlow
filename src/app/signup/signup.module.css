@@ -1,0 +1,190 @@
+/* Input component styles */
+.inputWrapper {
+  position: relative;
+  width: 100%;
+  min-width: 200px;
+}
+
+.inputLabel {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.inputField {
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  position: relative;
+  z-index: 10;
+  border: 2px solid var(--color-border);
+  height: 3.25rem;
+  width: 100%;
+  border-radius: 0.375rem;
+  background-color: var(--color-surface);
+  padding: 0.75rem 1rem;
+  font-weight: 100;
+  outline: none;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.input:focus {
+  background-color: var(--color-bg);
+}
+
+.input::placeholder {
+  font-weight: 500;
+}
+
+.topGradient {
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 20;
+  border-radius: 0.375rem 0.375rem 0 0;
+  overflow: hidden;
+  background: radial-gradient(30px circle at var(--mouse-x, 0px) 0px, var(--color-text-primary) 0%, transparent 70%);
+}
+
+.bottomGradient {
+  position: absolute;
+  pointer-events: none;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 20;
+  border-radius: 0 0 0.375rem 0.375rem;
+  overflow: hidden;
+  background: radial-gradient(30px circle at var(--mouse-x, 0px) 2px, var(--color-text-primary) 0%, transparent 70%);
+}
+
+.inputIcon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+}
+
+/* Signup page styles */
+.signupContainer {
+  height: 100vh;
+  width: 100%;
+  background-color: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--color-text-primary);
+}
+
+.signupCard {
+  width: 100%;
+  max-width: 56rem;
+  display: flex;
+  justify-content: space-between;
+  background-color: var(--color-surface);
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+@media (min-height: 600px) {
+  .signupCard {
+    height: 600px;
+  }
+}
+
+.leftSection {
+  width: 100%;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .leftSection {
+    width: 50%;
+  }
+}
+
+.gradientBlob {
+  position: absolute;
+  pointer-events: none;
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(to right, rgba(192, 132, 250, 0.3), rgba(147, 197, 253, 0.3), rgba(244, 114, 182, 0.3));
+  border-radius: 9999px;
+  filter: blur(48px);
+  transition: opacity 0.2s;
+  opacity: 0;
+  transform: translate(var(--blob-x, 0px), var(--blob-y, 0px));
+  transition: transform 0.1s ease-out, opacity 0.2s;
+}
+
+.gradientBlob.visible {
+  opacity: 1;
+}
+
+.formContent {
+  position: relative;
+  z-index: 10;
+}
+
+.signupForm {
+  text-align: center;
+  display: grid;
+  gap: 1rem;
+  height: 100%;
+}
+
+.formFields {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.heading {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-family: var(--font-headline, system-ui);
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  color: var(--color-text-secondary, rgba(0, 0, 0, 0.6));
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.rightSection {
+  display: none;
+  width: 50%;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(200, 150, 255, 0.3), rgba(150, 200, 255, 0.3));
+}
+
+@media (min-width: 1024px) {
+  .rightSection {
+    display: flex;
+  }
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -18,9 +18,9 @@ function EditForm() {
     const formId = params.formId as string;
 
     const formRef = useMemoFirebase(() => {
-        if (!formId) return null;
-        return doc(firestore, `forms/${formId}`);
-    }, [firestore, formId]);
+        if (!formId || !user) return null;
+        return doc(firestore, 'users', user.uid, 'forms', formId);
+    }, [firestore, formId, user]);
 
     const { data: formData, isLoading } = useDoc<Omit<Form, 'id'>>(formRef);
     
@@ -74,3 +74,5 @@ export default function EditFormPage() {
         </AuthGuard>
     );
 }
+
+    

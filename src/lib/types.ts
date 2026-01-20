@@ -23,11 +23,14 @@ export type Form = {
   responseCount: number;
   createdAt: string;
   updatedAt?: string;
+  requiresSignIn?: boolean;
+  editors?: string[];
 };
 
 export type FormResponse = {
   id: string;
   formId: string;
+  formOwnerId: string;
   submittedAt: string;
   answers: {
     questionId: string;

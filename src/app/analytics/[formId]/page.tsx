@@ -26,13 +26,14 @@ import { collection, doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Form, FormResponse, Question } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
-import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { Download, ArrowLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import Link from "next/link";
 
 // Helper function to generate colors for charts
 const generateChartColors = (numColors: number) => {
@@ -44,39 +45,13 @@ const generateChartColors = (numColors: number) => {
 };
 
 // Component to render a chart for a specific question
-const QuestionAnalytics = ({ question, responses }: { question: Question, responses: FormResponse[] }) => {
-    const data = useMemo(() => {
-        const answerCounts: { [key: string]: number } = {};
-
-        responses.forEach(response => {
-            const answer = response.answers.find(a => a.questionId === question.id);
-            if (answer && answer.value !== undefined && answer.value !== null) {
-                if (Array.isArray(answer.value)) { // Checkboxes
-                    answer.value.forEach(val => {
-                        answerCounts[val] = (answerCounts[val] || 0) + 1;
-                    });
-                } else { // Multiple choice, rating, etc.
-                    const key = String(answer.value);
-                    answerCounts[key] = (answerCounts[key] || 0) + 1;
-                }
-            }
-        });
-        
-        if (question.type === 'multiple-choice' || question.type === 'checkboxes' || question.type === 'rating') {
-            const chartData = Object.entries(answerCounts).map(([name, value]) => ({ name, value }));
-            return chartData;
-        }
-
-        return responses.map(r => r.answers.find(a => a.questionId === question.id)?.value).filter(Boolean);
-
-    }, [question, responses]);
-
-    const chartColors = useMemo(() => generateChartColors(Array.isArray(data) ? data.length : 0), [data]);
+const QuestionAnalytics = ({ question, data }: { question: Question, data: any[] }) => {
+    const chartColors = useMemo(() => generateChartColors(data.length), [data]);
 
     const chartConfig = useMemo(() => {
         const config: ChartConfig = {};
-        if (Array.isArray(data) && ['multiple-choice', 'checkboxes', 'rating'].includes(question.type)) {
-            (data as {name: string}[]).forEach((item, index) => {
+        if (['multiple-choice', 'checkboxes', 'rating'].includes(question.type)) {
+            data.forEach((item, index) => {
                 if(typeof item === 'object' && item !== null && 'name' in item)
                 config[item.name as string] = {
                     label: item.name as string,
@@ -87,7 +62,7 @@ const QuestionAnalytics = ({ question, responses }: { question: Question, respon
         return config;
     }, [data, question.type, chartColors]);
 
-    if (!responses || responses.length === 0) {
+    if (!data || data.length === 0) {
         return <p className="text-muted-foreground">No responses to analyze for this question yet.</p>;
     }
     
@@ -95,17 +70,17 @@ const QuestionAnalytics = ({ question, responses }: { question: Question, respon
         case 'multiple-choice':
         case 'checkboxes':
         case 'rating':
-            if (!Array.isArray(data) || data.length === 0) {
+            if (data.length === 0) {
                  return <p className="text-muted-foreground">No responses to analyze for this question yet.</p>;
             }
             return (
                 <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                    <BarChart accessibilityLayer data={data as any[]}>
+                    <BarChart accessibilityLayer data={data}>
                         <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
                         <YAxis />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Bar dataKey="value" fill="var(--color-value)" radius={4}>
-                             {(data as any[]).map((entry, index) => (
+                             {data.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                             ))}
                         </Bar>
@@ -153,18 +128,28 @@ export default function FormAnalyticsPage() {
 
     const [filters, setFilters] = useState<Record<string, string>>({});
 
-    const formRef = useMemoFirebase(() => {
+    // 2-step fetch: Get lookup first, then the form
+    const lookupRef = useMemoFirebase(() => {
         if (!formId) return null;
-        return doc(firestore, `forms/${formId}`);
+        return doc(firestore, 'form_lookups', formId);
     }, [firestore, formId]);
 
-    const responsesRef = useMemoFirebase(() => {
-        if(!formId) return null;
-        return collection(firestore, `forms/${formId}/responses`);
-    }, [firestore, formId]);
+    const { data: lookupData, isLoading: isLookupLoading } = useDoc<{ownerId: string}>(lookupRef);
+
+    const formRef = useMemoFirebase(() => {
+        if (!formId || !lookupData?.ownerId) return null;
+        return doc(firestore, 'users', lookupData.ownerId, 'forms', formId);
+    }, [firestore, formId, lookupData]);
 
     const { data: formData, isLoading: isFormLoading } = useDoc<Omit<Form, 'id'>>(formRef);
+
+    const responsesRef = useMemoFirebase(() => {
+        if(!formId || !lookupData?.ownerId) return null;
+        return collection(firestore, `users/${lookupData.ownerId}/forms/${formId}/responses`);
+    }, [firestore, formId, lookupData]);
+
     const { data: responses, isLoading: areResponsesLoading } = useCollection<FormResponse>(responsesRef);
+
 
     const filteredResponses = useMemo(() => {
         if (!responses) return [];
@@ -178,6 +163,58 @@ export default function FormAnalyticsPage() {
             });
         });
     }, [responses, filters]);
+
+    const analyticsData = useMemo(() => {
+        if (!formData || !filteredResponses) {
+            return {};
+        }
+
+        // Initialize data structures
+        const dataByQuestion: { [key: string]: any } = {};
+        const questionMap: Map<string, Question> = new Map(formData.questions.map(q => [q.id, q]));
+
+        formData.questions.forEach(question => {
+            const questionType = question.type;
+            if (questionType === 'multiple-choice' || questionType === 'checkboxes' || questionType === 'rating') {
+                dataByQuestion[question.id] = {}; // Use an object for counts: { option: count }
+            } else {
+                dataByQuestion[question.id] = []; // Use an array for raw text answers
+            }
+        });
+
+        // Single pass over all responses to aggregate answers
+        for (const response of filteredResponses) {
+            for (const answer of response.answers) {
+                const question = questionMap.get(answer.questionId);
+                if (!question) continue;
+
+                const { questionId, value } = answer;
+                const questionType = question.type;
+
+                if (questionType === 'multiple-choice' || questionType === 'rating') {
+                    const stringValue = String(value);
+                    dataByQuestion[questionId][stringValue] = (dataByQuestion[questionId][stringValue] || 0) + 1;
+                } else if (questionType === 'checkboxes' && Array.isArray(value)) {
+                    for (const option of value) {
+                        dataByQuestion[questionId][option] = (dataByQuestion[questionId][option] || 0) + 1;
+                    }
+                } else if ((questionType === 'text' || questionType === 'textarea') && value) {
+                    (dataByQuestion[questionId] as any[]).push(value);
+                }
+            }
+        }
+
+        // Final transformation into array format required by charts
+        for (const question of formData.questions) {
+            const questionType = question.type;
+            if (questionType === 'multiple-choice' || questionType === 'checkboxes' || questionType === 'rating') {
+                dataByQuestion[question.id] = Object.entries(dataByQuestion[question.id]).map(([name, value]) => ({ name, value }));
+            }
+        }
+
+        return dataByQuestion;
+    }, [formData, filteredResponses]);
+
 
     const handleFilterChange = (questionId: string, value: string) => {
         setFilters(prev => ({
@@ -232,15 +269,22 @@ export default function FormAnalyticsPage() {
     }, [formData]);
 
 
-    const isLoading = isFormLoading || areResponsesLoading;
+    const isLoading = isLookupLoading || isFormLoading || areResponsesLoading;
     
     if (isLoading) {
         return (
             <AuthGuard>
                 <div className="flex flex-col gap-8">
+                     <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10" />
+                        <div>
+                            <Skeleton className="h-7 w-48 mb-2" />
+                            <Skeleton className="h-4 w-72" />
+                        </div>
+                    </div>
                      <Card>
                         <CardHeader>
-                            <Skeleton className="h-8 w-3/4" />
+                            <Skeleton className="h-6 w-3/4" />
                             <Skeleton className="h-4 w-1/2 mt-2" />
                         </CardHeader>
                         <CardContent>
@@ -270,7 +314,7 @@ export default function FormAnalyticsPage() {
         );
     }
     
-    if (!isFormLoading && formData && user && formData.userId !== user.uid) {
+    if (!isLoading && formData && user && formData.userId !== user.uid) {
         return <AuthGuard><div>You are not authorized to view these analytics.</div></AuthGuard>;
     }
 
@@ -281,9 +325,20 @@ export default function FormAnalyticsPage() {
     return (
         <AuthGuard>
             <div className="flex flex-col gap-8">
+                <div className="flex items-center gap-4">
+                    <Link href="/analytics">
+                        <Button variant="ghost" size="icon">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold font-headline">Form Analytics</h1>
+                        <p className="text-muted-foreground text-sm">Detailed insights for your form.</p>
+                    </div>
+                </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold font-headline tracking-tight">{formData.title}</CardTitle>
+                        <CardTitle className="text-xl font-semibold">{formData.title}</CardTitle>
                         <CardDescription>{formData.description}</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -344,7 +399,7 @@ export default function FormAnalyticsPage() {
                                <CardTitle>{question.text}</CardTitle>
                            </CardHeader>
                            <CardContent>
-                               <QuestionAnalytics question={question} responses={filteredResponses} />
+                               <QuestionAnalytics question={question} data={analyticsData[question.id] || []} />
                            </CardContent>
                        </Card>
                    ))}
@@ -353,3 +408,5 @@ export default function FormAnalyticsPage() {
         </AuthGuard>
     );
 }
+
+    

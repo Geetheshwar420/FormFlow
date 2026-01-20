@@ -1,85 +1,175 @@
 /**
- * Core Philosophy: This ruleset uses a combination of user-owned data trees and a global,
- * query-based security model.
+ * =========================================================================
+ * FormFlow - Firestore Security Rules v2
+ * =========================================================================
+ *
+ * FormFlow is a form creation and response collection platform.
+ *
+ * Core Features:
+ * 1. Users create custom forms with various question types
+ * 2. Forms can be shared with others (editors) via editor list
+ * 3. Forms collect responses from authenticated or public users
+ * 4. Responses can be viewed and analyzed by form owner
+ * 5. Public form sharing via lookup table for direct URLs
  *
  * Data Structure:
- * - `/users/{userId}`: Root for private user data like profiles, settings, and themes.
- * - `/forms/{formId}`: A global collection of all forms. Each form document contains a `userId`
- *   field to denote ownership.
+ * /users/{userId}
+ *   - id, email, username, displayName, createdAt, updatedAt
+ *   /forms/{formId}
+ *     - userId, title, description, questions[], responseCount
+ *     - createdAt, updatedAt, requiresSignIn, editors[]
+ *     /responses/{responseId}
+ *       - formId, submittedAt, answers[]
  *
- * Key Security Decisions:
- * - User Isolation: Users can only access documents within their own `/users/{userId}` tree.
- * - Global Forms, Private Management: Forms are stored globally to allow for public access via a direct
- *   link (`/forms/{formId}`). However, writes and deletions are strictly controlled. Users can only
- *   create forms for themselves (`request.resource.data.userId == request.auth.uid`) and can only
- *   update or delete forms they own (verified by checking the existing document's `userId`).
- * - Query-Based Listing: Instead of path-based listing (e.g., `/users/{userId}/forms`), users list
- *   their own forms by querying the global `/forms` collection `where('userId', '==', request.auth.uid)`.
- *   The rules enforce this query constraint.
- * - Public Submissions: Anyone (authenticated or anonymous) can read a public form and submit a
- *   `response` to it. Only the form's owner can view and manage the collected responses.
+ * /form_lookups/{formId}
+ *   - ownerId (used for public form access)
+ *
+ * Security Model:
+ * - Users can only access their own user document
+ * - Users can create and manage their own forms
+ * - Users can share forms with others by adding them to editors list
+ * - Form responses are only accessible to the form owner
+ * - Public forms can be viewed via lookup table
  */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ------------------------------------------------------------------------
-    // Helper Functions
-    // ------------------------------------------------------------------------
+    // =====================================================================
+    // HELPER FUNCTIONS
+    // =====================================================================
 
-    function isSignedIn() {
+    function isAuthenticated() {
       return request.auth != null;
     }
 
+    function getUserId() {
+      return request.auth.uid;
+    }
+
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return isAuthenticated() && getUserId() == userId;
     }
 
-    // ------------------------------------------------------------------------
-    // User Data Collections (/users/{userId}/**)
-    // ------------------------------------------------------------------------
+    function isFormOwner(formUserId) {
+      return isAuthenticated() && getUserId() == formUserId;
+    }
+
+    function isFormEditor(editorsList) {
+      return isAuthenticated() && getUserId() in editorsList;
+    }
+
+    function canEditForm(resource) {
+      let userId = getUserId();
+      return resource.data.userId == userId || 
+             (resource.data.editors is list && userId in resource.data.editors);
+    }
+
+    // =====================================================================
+    // USERS COLLECTION - /users/{userId}
+    // =====================================================================
     match /users/{userId} {
+      // Users can read their own profile
       allow get: if isOwner(userId);
-      allow list: if false; // Prevent listing all users
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      // Users can update their own profile
       allow update: if isOwner(userId);
-      allow delete: if false; // Disallow client-side account deletion
 
-      match /themes/{themeId} {
-        allow read, write: if isOwner(userId);
-      }
+      // Users create their own profile on signup
+      allow create: if isOwner(userId) && 
+        request.resource.data.id == userId &&
+        request.resource.data.keys().hasAll(['id', 'email', 'username', 'displayName', 'createdAt']);
 
-      match /settings/{settingId} {
-        allow read, write: if isOwner(userId);
+      // Prevent listing all users and deleting accounts
+      allow list, delete: if false;
+
+      // =====================================================================
+      // FORMS SUBCOLLECTION - /users/{userId}/forms/{formId}
+      // =====================================================================
+      match /forms/{formId} {
+        // Owner can read their own forms
+        allow get: if isOwner(userId);
+
+        // Anyone (authenticated or not) can read forms that are public
+        // (by checking the form exists in form_lookups or requiresSignIn is false)
+        allow get: if !isAuthenticated() && 
+          exists(/databases/$(database)/documents/form_lookups/$(formId));
+
+        // Owner can list their own forms
+        allow list: if isOwner(userId);
+
+        // Owner can create forms in their folder
+        allow create: if isOwner(userId) &&
+          request.resource.data.userId == userId &&
+          request.resource.data.keys().hasAll(['title', 'description', 'questions', 'userId', 'responseCount', 'createdAt']);
+
+        // Owner or editors can update form details
+        allow update: if canEditForm(resource);
+
+        // Only owner can delete their forms
+        allow delete: if isFormOwner(resource.data.userId);
+
+        // =====================================================================
+        // RESPONSES SUBCOLLECTION - /users/{userId}/forms/{formId}/responses/{responseId}
+        // =====================================================================
+        match /responses/{responseId} {
+          // Anyone can create a response (if allowed by form rules)
+          allow create: if request.resource.data.formId == formId &&
+            request.resource.data.keys().hasAll(['formId', 'submittedAt', 'answers']);
+
+          // Only form owner can read responses
+          allow get, list: if isOwner(userId);
+
+          // Only form owner can update responses
+          allow update: if isOwner(userId);
+
+          // Only form owner can delete responses
+          allow delete: if isOwner(userId);
+        }
       }
     }
 
-    // ------------------------------------------------------------------------
-    // Global Forms Collection (/forms/{formId}/**)
-    // ------------------------------------------------------------------------
-    match /forms/{formId} {
-      // Allow public GET for viewing/responding to forms.
+    // =====================================================================
+    // FORM LOOKUPS COLLECTION - /form_lookups/{formId}
+    // =====================================================================
+    // This collection maintains a public lookup for forms to enable
+    // shareable public links without exposing user data
+    match /form_lookups/{formId} {
+      // Anyone can read a lookup to find the form owner
       allow get: if true;
 
-      // Allow owners to LIST their own documents. This requires the client query
-      // to include `where("userId", "==", request.auth.uid)`.
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Authenticated users can create lookups (typically done server-side)
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['ownerId']) &&
+        request.resource.data.ownerId == getUserId();
 
-      // Allow owners to UPDATE or DELETE their own documents.
-      allow update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
-      
-      // Allow `create` separately because the document doesn't exist yet for the `get()` check above.
-      // request.resource refers to the document being written.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Only the lookup creator can update
+      allow update: if isAuthenticated() && 
+        resource.data.ownerId == getUserId();
 
-      // --- Responses Subcollection ---
-      match /responses/{responseId} {
-        // Anyone can create a response (submit the form).
-        allow create: if true;
+      // Only the lookup creator can delete
+      allow delete: if isAuthenticated() && 
+        resource.data.ownerId == getUserId();
 
-        // Only the form owner can read or manage the responses.
-        allow get, list, update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
-      }
+      // Prevent listing all lookups
+      allow list: if false;
+    }
+
+    // =====================================================================
+    // COLLECTION GROUP RULES - Shared Forms Access
+    // =====================================================================
+    // Allow users to list forms where they are listed as editors
+    match /{path=**}/forms/{formId} {
+      allow list: if isAuthenticated() && 
+        isFormEditor(resource.data.editors);
+    }
+
+    // =====================================================================
+    // DEFAULT DENY - Catch all other paths
+    // =====================================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

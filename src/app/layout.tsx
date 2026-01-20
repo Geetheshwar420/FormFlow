@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isAppPage = !['/', '/login', '/signup'].includes(pathname);
+  const isAppPage = !['/', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/view/') && !pathname.startsWith('/v/');
 
   return (
     <html lang="en" suppressHydrationWarning>

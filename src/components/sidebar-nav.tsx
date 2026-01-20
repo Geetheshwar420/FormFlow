@@ -14,7 +14,6 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   BarChart3,
-  Settings,
   HelpCircle,
   User,
   LogOut,
@@ -38,11 +37,6 @@ const menuItems = [
     href: "/profile",
     label: "Profile",
     icon: User,
-  },
-  {
-    href: "/settings",
-    label: "Settings",
-    icon: Settings,
   },
 ];
 

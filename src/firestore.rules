@@ -1,0 +1,122 @@
+/**
+ * =========================================================================
+ * FormFlow Firestore Security Rules (v4 - OR Query Rewrite)
+ * =========================================================================
+ *
+ * Core Philosophy: This ruleset is designed to be secure by default, only
+ * granting access that is explicitly defined. It uses a single, comprehensive
+ * collection group query rule to handle listing both owned and shared forms,
+ * which is more robust and less prone to conflicts.
+ *
+ * Key Security Decisions:
+ *
+ * 1. Unified List Rule: A single `allow list` rule on the `forms` collection
+ *    group now governs the dashboard query. This rule grants access if the user
+ *    is the owner (`request.auth.uid == resource.data.userId`) OR if they
+ *    are in the `editors` array. This directly mirrors the client-side OR query.
+ *
+ * 2. No Conflicting Rules: The previous `allow list` rule on the specific
+ *    user subcollection (`/users/{userId}/forms`) has been removed. This was
+ *    the source of the conflict and permission errors when running a collection
+ *    group query. All list logic is now consolidated in one place.
+ *
+ * 3. Granular Permissions:
+ *    - Only the form owner (`isOwner(userId)`) can delete a form or manage its collaborators.
+ *    - An owner OR an editor can update a form's content.
+ *    - Only the form owner can view or manage the responses to their form.
+ *
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ------------------------------------------------------------------------
+    // User Data Collection (/users/{userId})
+    // ------------------------------------------------------------------------
+    match /users/{userId} {
+      // Users can read and update their own profile.
+      allow get, update: if isOwner(userId);
+
+      // Users can create their own profile document upon signup.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      // Disallow listing all users or deleting accounts from the client.
+      allow list, delete: if false;
+
+      // --- Private User Subcollections ---
+      match /themes/{themeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // --- Forms Subcollection ---
+      match /forms/{formId} {
+        // Anyone can view a single form (for public sharing).
+        allow get: if true;
+        
+        // NOTE: There is no 'allow list' here. It is handled by the collection group rule below.
+
+        // Only the owner can create or delete their own forms.
+        allow create, delete: if isOwner(userId);
+
+        // The owner or a designated editor can update a form's contents.
+        allow update: if isOwner(userId) || ('editors' in resource.data && resource.data.editors is list && request.auth.uid in resource.data.editors);
+
+        // --- Responses Subcollection ---
+        match /responses/{responseId} {
+          // Allow response creation, enforcing the 'requiresSignIn' flag.
+          allow create: if resource.data.formOwnerId == userId && (
+              get(/databases/$(database)/documents/users/$(userId)/forms/$(formId)).data.requiresSignIn == false || isSignedIn()
+          );
+
+          // Only the form owner can read or manage responses.
+          allow get, list, update, delete: if isOwner(userId);
+        }
+      }
+    }
+    
+    // ------------------------------------------------------------------------
+    // Public Form Lookup Collection (/form_lookups/{formId})
+    // ------------------------------------------------------------------------
+    match /form_lookups/{formId} {
+        // Anyone can read the lookup document to find a form's owner.
+        allow get: if true;
+        
+        // Only an authenticated user can create a lookup, and it must be for their own form.
+        allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+
+        // Disallow all other operations for security.
+        allow list, update, delete: if false;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Group Rules for 'forms'
+    // ------------------------------------------------------------------------
+    match /{path=**}/forms/{formId} {
+      // This single rule now governs the dashboard's `list` query.
+      // It allows a user to list forms where they are either the owner
+      // OR an editor. This rule MUST be paired with a client-side OR query.
+      allow list: if isSignedIn() && (
+        ('userId' in resource.data && request.auth.uid == resource.data.userId) || 
+        ('editors' in resource.data && resource.data.editors is list && request.auth.uid in resource.data.editors)
+      );
+    }
+  }
+}
+
+    

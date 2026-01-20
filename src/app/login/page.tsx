@@ -7,7 +7,7 @@ import {
 } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/firebase/auth/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
@@ -97,6 +97,7 @@ export default function LoginPage() {
   const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -105,9 +106,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user && !isUserLoading) {
-      router.push('/dashboard');
+      const redirectUrl = searchParams.get('redirect');
+      router.push(redirectUrl || '/dashboard');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, searchParams]);
 
 
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -166,7 +168,8 @@ export default function LoginPage() {
             title: 'Signed in.',
             description: "Welcome back! You're logged in.",
         });
-        router.push('/dashboard');
+        const redirectUrl = searchParams.get('redirect');
+        router.push(redirectUrl || '/dashboard');
     } catch (err: any) {
         toast({
             title: 'Authentication Error',
@@ -183,7 +186,8 @@ export default function LoginPage() {
         title: 'Signed in with Google.',
         description: "Welcome! You're logged in.",
       });
-      router.push('/dashboard');
+      const redirectUrl = searchParams.get('redirect');
+      router.push(redirectUrl || '/dashboard');
     } catch (err: any) {
       toast({
         title: 'Authentication Error',

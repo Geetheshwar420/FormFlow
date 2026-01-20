@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Form, Question } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -14,18 +15,21 @@ import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
+import { useAuth } from "@/firebase/auth/use-auth";
 
 interface FormViewerProps {
-    form: Omit<Form, 'id' | 'userId' | 'responseCount' | 'createdAt' | 'updatedAt'> & { id: string };
+    form: Form;
     isPreview?: boolean;
 }
 
 export function FormViewer({ form, isPreview = false }: FormViewerProps) {
     const { toast } = useToast();
     const firestore = useFirestore();
+    const router = useRouter();
     const [answers, setAnswers] = useState<Record<string, any>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user, signOut } = useAuth();
 
     const handleValueChange = (questionId: string, value: any) => {
         setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -35,11 +39,22 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
         e.preventDefault();
         if (isPreview) return;
 
+        if (form.requiresSignIn && !user) {
+            toast({
+                title: "Authentication Required",
+                description: "You must sign in to submit this form.",
+                variant: "destructive"
+            });
+            router.push(`/login?redirect=/view/${form.id}`);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
-            const responsesCollection = collection(firestore, `forms/${form.id}/responses`);
+            const responsesCollection = collection(firestore, `users/${form.userId}/forms/${form.id}/responses`);
             const responsePayload = {
                 formId: form.id,
+                formOwnerId: form.userId,
                 submittedAt: new Date().toISOString(),
                 answers: Object.entries(answers).map(([questionId, value]) => ({
                     questionId,
@@ -63,6 +78,10 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
             setIsSubmitting(false);
         }
     }
+
+    const handleSwitchAccount = async () => {
+        await signOut();
+    };
 
 
     const renderQuestion = (question: Question) => {
@@ -122,6 +141,7 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
                       {[1, 2, 3, 4, 5].map((value) => (
                         <Button
                           key={value}
+                          type="button"
                           variant={answers[questionId] === value ? "default" : "outline"}
                           onClick={() => handleValueChange(questionId, value)}
                         >
@@ -140,6 +160,15 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
 
     return (
         <Card className="max-w-3xl mx-auto">
+            {form.requiresSignIn && !isPreview && user && (
+                <div className="p-4 border-b flex items-center justify-between text-sm bg-muted/50">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span>Signed in as {user.email}</span>
+                    </div>
+                    <Button variant="link" className="p-0 h-auto" onClick={handleSwitchAccount}>Switch account</Button>
+                </div>
+            )}
             <CardHeader>
                 <CardTitle className="text-3xl font-bold font-headline">{form.title}</CardTitle>
                 <CardDescription>{form.description}</CardDescription>
@@ -168,3 +197,5 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
         </Card>
     )
 }
+
+    

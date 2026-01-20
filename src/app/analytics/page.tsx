@@ -5,26 +5,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/firebase/auth/use-auth";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
-import { collection, query, where } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 import type { Form } from "@/lib/types";
-import { BarChart, FileText, CheckSquare } from "lucide-react";
+import { ArrowLeft, BarChart, FileText, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 export default function AnalyticsPage() {
     const { user } = useAuth();
     const firestore = useFirestore();
 
-    const formsCollection = useMemoFirebase(() => user ? query(collection(firestore, 'forms'), where('userId', '==', user.uid)) : null, [firestore, user]);
+    const formsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'forms') : null, [firestore, user]);
     const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
 
     if (isLoading) {
         return (
             <AuthGuard>
                 <div className="flex flex-col gap-8">
-                    <div>
-                        <Skeleton className="h-8 w-64" />
-                        <Skeleton className="h-4 w-80 mt-2" />
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10" />
+                        <div>
+                            <Skeleton className="h-8 w-64" />
+                            <Skeleton className="h-4 w-80 mt-2" />
+                        </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <Card>
@@ -84,13 +88,20 @@ export default function AnalyticsPage() {
     return (
         <AuthGuard>
             <div className="flex flex-col gap-8">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline tracking-tight">
-                        Analytics Overview
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        A summary of your forms performance.
-                    </p>
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="icon">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-3xl font-bold font-headline tracking-tight">
+                            Analytics Overview
+                        </h1>
+                        <p className="text-muted-foreground mt-1">
+                            A summary of your forms performance.
+                        </p>
+                    </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <Card>
@@ -143,3 +154,5 @@ export default function AnalyticsPage() {
         </AuthGuard>
     );
 }
+
+    

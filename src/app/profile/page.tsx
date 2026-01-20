@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/firebase/auth/use-auth";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { doc } from "firebase/firestore";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const { user, changePassword, isAuthLoading } = useAuth();
@@ -60,13 +61,20 @@ export default function ProfilePage() {
   return (
     <AuthGuard>
       <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-3xl font-bold font-headline tracking-tight">
-            Profile
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your profile information.
-          </p>
+        <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+                <Button variant="ghost" size="icon">
+                    <ArrowLeft className="h-5 w-5" />
+                </Button>
+            </Link>
+          <div>
+            <h1 className="text-3xl font-bold font-headline tracking-tight">
+              Profile
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your profile information.
+            </p>
+          </div>
         </div>
         <Card>
           <CardHeader>

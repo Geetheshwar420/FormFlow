@@ -6,11 +6,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function HelpPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex items-center gap-4">
+        <Link href="/dashboard">
+            <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
+        </Link>
         <div>
           <h1 className="text-3xl font-bold font-headline tracking-tight">
             Help & Support

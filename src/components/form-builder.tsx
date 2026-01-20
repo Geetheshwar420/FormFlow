@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,10 @@ import {
   Share,
   Pencil,
   Eye,
-  BarChart3
+  BarChart3,
+  Settings,
+  Users,
+  Loader2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -25,13 +28,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase/auth/use-auth";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useRouter } from "next/navigation";
 import { FormViewer } from "./form-viewer";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Skeleton } from "./ui/skeleton";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import Image from "next/image";
 
 const questionTypes: {
   value: QuestionType;
@@ -49,6 +54,8 @@ interface FormBuilderProps {
   initialData?: Omit<Form, 'id'> & { id: string };
 }
 
+type CollaboratorProfile = { id: string; email?: string; displayName?: string, photoURL?: string };
+
 export function FormBuilder({ initialData }: FormBuilderProps) {
   const { toast } = useToast();
   const router = useRouter();
@@ -60,6 +67,26 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
   const [questions, setQuestions] = useState<Question[]>(() =>
     initialData?.questions.map((q) => ({ ...q, id: q.id || crypto.randomUUID() })) || []
   );
+  const [requiresSignIn, setRequiresSignIn] = useState(initialData?.requiresSignIn || false);
+
+  const [newCollabEmail, setNewCollabEmail] = useState("");
+  const [collaboratorProfiles, setCollaboratorProfiles] = useState<CollaboratorProfile[]>([]);
+  const [isCollaboratorsLoading, setIsCollaboratorsLoading] = useState(false);
+  const [isSubmittingCollab, setIsSubmittingCollab] = useState(false);
+
+  useEffect(() => {
+    if (initialData?.editors && initialData.editors.length > 0) {
+      setIsCollaboratorsLoading(true);
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('id', 'in', initialData.editors));
+      getDocs(q).then(snapshot => {
+        const profiles = snapshot.docs.map(doc => doc.data() as CollaboratorProfile);
+        setCollaboratorProfiles(profiles);
+      }).finally(() => setIsCollaboratorsLoading(false));
+    } else {
+        setCollaboratorProfiles([]);
+    }
+  }, [initialData?.editors, firestore]);
 
   const addQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
@@ -102,16 +129,25 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
       });
       return;
     }
+    
+    // Only the owner or an editor can save
+    const isOwner = initialData?.userId === user.uid;
+    const isEditor = initialData?.editors?.includes(user.uid);
+    if(initialData && !isOwner && !isEditor) {
+        toast({ title: "Unauthorized", description: "You don't have permission to save this form.", variant: "destructive" });
+        return;
+    }
 
     const formPayload = {
       title,
       description,
-      questions, // Persist questions with their IDs
+      questions,
+      requiresSignIn,
     };
 
     try {
       if (initialData?.id) {
-        const formRef = doc(firestore, `forms/${initialData.id}`);
+        const formRef = doc(firestore, 'users', initialData.userId, 'forms', initialData.id);
         const formToUpdate = {
           ...formPayload,
           updatedAt: new Date().toISOString(),
@@ -121,23 +157,33 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           title: "Form updated!",
           description: "Your form has been successfully updated.",
         });
+        // Don't redirect if editor, only if owner just created it
+        if(isOwner) {
+            router.push('/dashboard');
+        }
       } else {
-        const formsCollection = collection(firestore, `forms`);
+        const formsCollection = collection(firestore, 'users', user.uid, 'forms');
         const formToSave = {
           ...formPayload,
           userId: user.uid,
           responseCount: 0,
+          editors: [],
           createdAt: new Date().toISOString(),
         };
-        const newFormRef = await addDocumentNonBlocking(formsCollection, formToSave);
-        toast({
-          title: "Form saved!",
-          description: "Your form has been successfully saved.",
+        addDocumentNonBlocking(formsCollection, formToSave).then(newFormRef => {
+          if (newFormRef) {
+            // Create the public lookup document
+            const lookupRef = doc(firestore, 'form_lookups', newFormRef.id);
+            setDocumentNonBlocking(lookupRef, { ownerId: user.uid }, {});
+            
+            toast({
+              title: "Form saved!",
+              description: "Your form has been successfully saved.",
+            });
+            router.replace(`/forms/edit/${newFormRef.id}`);
+          }
         });
-        router.replace(`/forms/edit/${newFormRef.id}`);
-        return; // prevent second router push
       }
-      router.push('/dashboard');
     } catch (error) {
       console.error("Error saving form:", error);
       toast({
@@ -148,12 +194,71 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
     }
   };
 
+  const handleAddCollaborator = async () => {
+    if (!newCollabEmail || !user || !initialData || user.uid !== initialData.userId) return;
+
+    if (newCollabEmail === user.email) {
+        toast({ title: "You are the owner of this form.", variant: "destructive" });
+        return;
+    }
+
+    setIsSubmittingCollab(true);
+    try {
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where('email', '==', newCollabEmail));
+        const userSnapshot = await getDocs(q);
+
+        if (userSnapshot.empty) {
+            toast({ title: "User not found", description: `No user with email ${newCollabEmail} found.`, variant: "destructive" });
+            return;
+        }
+
+        const collaborator = userSnapshot.docs[0].data();
+        if (initialData.editors?.includes(collaborator.id)) {
+            toast({ title: "Collaborator already exists", description: `${newCollabEmail} is already a collaborator.` });
+            return;
+        }
+
+        const formRef = doc(firestore, 'users', user.uid, 'forms', initialData.id);
+        await updateDoc(formRef, {
+            editors: arrayUnion(collaborator.id)
+        });
+        
+        toast({ title: "Collaborator Added", description: `${collaborator.displayName || collaborator.email} can now edit this form.` });
+        setNewCollabEmail("");
+
+    } catch (error) {
+        console.error("Error adding collaborator:", error);
+        toast({ title: "Error", description: "Could not add collaborator.", variant: "destructive" });
+    } finally {
+        setIsSubmittingCollab(false);
+    }
+  };
+
+  const handleRemoveCollaborator = async (collaboratorId: string) => {
+    if (!user || !initialData || user.uid !== initialData.userId) return;
+    try {
+        const formRef = doc(firestore, 'users', user.uid, 'forms', initialData.id);
+        await updateDoc(formRef, {
+            editors: arrayRemove(collaboratorId)
+        });
+        toast({ title: "Collaborator Removed", description: "Access has been revoked." });
+    } catch(error) {
+        console.error("Error removing collaborator:", error);
+        toast({ title: "Error", description: "Could not remove collaborator.", variant: "destructive" });
+    }
+  };
+
+
   const responsesRef = useMemoFirebase(() => {
-    if (!initialData?.id) return null;
-    return collection(firestore, `forms/${initialData.id}/responses`);
-  }, [firestore, initialData?.id]);
+    if (!initialData?.id || !user) return null;
+    const formOwnerId = initialData.userId;
+    return collection(firestore, `users/${formOwnerId}/forms/${initialData.id}/responses`);
+  }, [firestore, initialData, user]);
 
   const { data: responses, isLoading: areResponsesLoading } = useCollection<Omit<FormResponse, 'id'>>(responsesRef);
+
+  const isOwner = initialData?.userId === user?.uid;
 
   return (
     <div className="flex flex-col gap-6">
@@ -182,6 +287,10 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           <TabsTrigger value="responses" disabled={!initialData?.id}>
             <BarChart3 className="mr-2 h-4 w-4" />Responses
           </TabsTrigger>
+          <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Settings</TabsTrigger>
+          {isOwner && initialData && (
+             <TabsTrigger value="collaborators"><Users className="mr-2 h-4 w-4" />Collaborators</TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="builder" className="mt-6">
           <div className="flex flex-col gap-6">
@@ -273,7 +382,7 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
           </div>
         </TabsContent>
         <TabsContent value="preview" className="mt-6">
-            <FormViewer form={{id: initialData?.id || 'preview', title, description, questions}} isPreview />
+            <FormViewer form={{id: initialData?.id || 'preview', userId: user?.uid || '', title, description, questions, responseCount: 0, createdAt: '', requiresSignIn}} isPreview />
         </TabsContent>
         <TabsContent value="responses" className="mt-6">
              <Card>
@@ -326,6 +435,81 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
                 </CardContent>
             </Card>
         </TabsContent>
+        <TabsContent value="settings" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Form Settings</CardTitle>
+              <CardDescription>Adjust how your form collects responses.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="require-signin" className="text-base">Require Sign-In</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Respondents will be required to sign in to a FormFlow account to respond.
+                  </p>
+                </div>
+                <Switch
+                  id="require-signin"
+                  checked={requiresSignIn}
+                  onCheckedChange={setRequiresSignIn}
+                  disabled={!isOwner}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        {isOwner && initialData && (
+            <TabsContent value="collaborators" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Manage Collaborators</CardTitle>
+                        <CardDescription>Invite others to edit this form with you.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                         <div className="flex gap-2">
+                             <Input 
+                                placeholder="Collaborator's email"
+                                value={newCollabEmail}
+                                onChange={(e) => setNewCollabEmail(e.target.value)}
+                             />
+                             <Button onClick={handleAddCollaborator} disabled={isSubmittingCollab}>
+                                {isSubmittingCollab && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Add
+                            </Button>
+                         </div>
+
+                         <div className="space-y-4">
+                            <h3 className="text-sm font-medium text-muted-foreground">Current Collaborators</h3>
+                            {isCollaboratorsLoading ? (
+                                <div className="space-y-2">
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                </div>
+                            ) : collaboratorProfiles.length > 0 ? (
+                                collaboratorProfiles.map(collab => (
+                                <div key={collab.id} className="flex items-center justify-between p-2 rounded-md border">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-8 w-8">
+                                            {collab.photoURL && <Image src={collab.photoURL} alt={collab.displayName || 'avatar'} width={32} height={32} />}
+                                            <AvatarFallback>{collab.email?.[0].toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-medium">{collab.displayName}</p>
+                                            <p className="text-sm text-muted-foreground">{collab.email}</p>
+                                        </div>
+                                    </div>
+                                    <Button variant="ghost" size="sm" onClick={() => handleRemoveCollaborator(collab.id)}>Remove</Button>
+                                </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">No collaborators yet.</p>
+                            )}
+                         </div>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        )}
       </Tabs>
     </div>
   );
