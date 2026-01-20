@@ -8,6 +8,8 @@ import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Form } from '@/lib/types';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 
 function EditForm() {
     const { user } = useAuth();
@@ -23,7 +25,33 @@ function EditForm() {
     const { data: formData, isLoading } = useDoc<Omit<Form, 'id'>>(formRef);
 
     if (isLoading) {
-        return <div>Loading form...</div>;
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-2 space-y-6">
+                    <Card>
+                        <CardContent className="pt-6">
+                            <Skeleton className="h-10 w-1/2 mb-4" />
+                            <Skeleton className="h-20 w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardContent className="pt-6 space-y-4">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-8 w-full" />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardContent className="pt-6 space-y-4">
+                            <Skeleton className="h-8 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="space-y-6 lg:sticky top-24">
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            </div>
+        );
     }
 
     if (!formData) {

@@ -18,6 +18,7 @@ import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { collection } from "firebase/firestore";
 import type { Form } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function Dashboard() {
   const { user } = useAuth();
@@ -26,7 +27,36 @@ function Dashboard() {
   const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="flex flex-col">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent className="flex-grow space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+              </CardContent>
+              <CardFooter className="flex-col sm:flex-row gap-2">
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-20 ml-auto" />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -11,6 +11,7 @@ import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { collection, doc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import type { Form } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Assuming a Response type
 type FormResponse = {
@@ -39,7 +40,49 @@ export default function FormAnalyticsPage() {
     const { data: responses, isLoading: areResponsesLoading } = useCollection<Omit<FormResponse, 'id'>>(responsesRef);
 
     if (isFormLoading || areResponsesLoading) {
-        return <div>Loading analytics...</div>;
+        return (
+            <AuthGuard>
+                <div className="flex flex-col gap-8">
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-8 w-3/4" />
+                            <Skeleton className="h-4 w-1/2 mt-2" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex gap-4">
+                                <Skeleton className="h-6 w-24" />
+                                <Skeleton className="h-6 w-32" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-4 w-72 mt-2" />
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead><Skeleton className="h-5 w-24" /></TableHead>
+                                        <TableHead><Skeleton className="h-5 w-32" /></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {[...Array(3)].map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </div>
+            </AuthGuard>
+        );
     }
 
     if (!formData) {

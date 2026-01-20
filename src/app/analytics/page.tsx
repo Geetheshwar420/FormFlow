@@ -9,6 +9,7 @@ import { collection } from "firebase/firestore";
 import type { Form } from "@/lib/types";
 import { BarChart, FileText, CheckSquare } from "lucide-react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AnalyticsPage() {
     const { user } = useAuth();
@@ -18,7 +19,63 @@ export default function AnalyticsPage() {
     const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
 
     if (isLoading) {
-        return <div>Loading analytics...</div>;
+        return (
+            <AuthGuard>
+                <div className="flex flex-col gap-8">
+                    <div>
+                        <Skeleton className="h-8 w-64" />
+                        <Skeleton className="h-4 w-80 mt-2" />
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-4 w-24" />
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-12" />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-4 w-28" />
+                                <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-12" />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-4 w-40" />
+                                <BarChart className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-12" />
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-4 w-72 mt-2" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-col gap-4">
+                                <div className="p-4 rounded-lg border">
+                                    <Skeleton className="h-5 w-48" />
+                                    <Skeleton className="h-4 w-24 mt-2" />
+                                </div>
+                                <div className="p-4 rounded-lg border">
+                                    <Skeleton className="h-5 w-40" />
+                                    <Skeleton className="h-4 w-20 mt-2" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </AuthGuard>
+        );
     }
 
     const totalForms = forms?.length || 0;
