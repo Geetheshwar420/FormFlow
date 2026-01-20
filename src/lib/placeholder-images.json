@@ -11,6 +11,12 @@
       "description": "Empty state illustration for when no forms are available",
       "imageUrl": "https://images.unsplash.com/photo-1454117096348-e4abbeba002c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBnZW9tZXRyaWN8ZW58MHx8fHwxNzY4ODY5ODIyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "abstract geometric"
+    },
+    {
+      "id": "login-image-1",
+      "description": "A person analyzing data on a computer screen.",
+      "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBhbmFseXppbmclMjBkYXRhfGVufDB8fHx8fDE3MTc2MzA3ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "data analysis"
     }
   ]
 }

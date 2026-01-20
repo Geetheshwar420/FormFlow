@@ -39,6 +39,16 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222.2 84% 10%;
     --sidebar-ring: 249 84% 60%;
+
+    /* For login-1 component compatibility */
+    --color-bg: hsl(var(--background));
+    --color-surface: hsl(var(--card));
+    --color-muted-surface: hsl(var(--muted));
+    --color-border: hsl(var(--border));
+    --color-text-secondary: hsl(var(--muted-foreground));
+    --color-text-primary: hsl(var(--foreground));
+    --color-heading: hsl(var(--foreground));
+    --color-bg-2: hsl(var(--secondary));
   }
 
   .dark {
@@ -70,6 +80,16 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222.2 84% 10%;
     --sidebar-ring: 249 84% 60%;
+
+    /* For login-1 component compatibility */
+    --color-bg: hsl(var(--background));
+    --color-surface: hsl(var(--card));
+    --color-muted-surface: hsl(var(--muted));
+    --color-border: hsl(var(--border));
+    --color-text-secondary: hsl(var(--muted-foreground));
+    --color-text-primary: hsl(var(--foreground));
+    --color-heading: hsl(var(--foreground));
+    --color-bg-2: hsl(var(--secondary));
   }
 }
 
