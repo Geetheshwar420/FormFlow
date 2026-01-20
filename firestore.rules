@@ -59,16 +59,17 @@ service cloud.firestore {
     // ------------------------------------------------------------------------
     match /forms/{formId} {
       // Allow public GET for viewing/responding to forms.
-      // This is combined with the owner-based `read` rule below.
-      // Any `get` request will be allowed because `(isOwner) || (true)` is always true.
       allow get: if true;
 
-      // Allow owners to `read` (get, list) and `write` (update, delete) their own documents.
-      // This rule enables the dashboard query (`list`) to work securely, as the rules engine
-      // verifies that the client's `where('userId', '==', auth.uid)` clause matches this condition.
-      allow read, update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
+      // Allow owners to LIST their own documents. This requires the client query
+      // to include `where("userId", "==", request.auth.uid)`.
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      // Allow owners to UPDATE or DELETE their own documents.
+      allow update, delete: if isSignedIn() && get(/databases/$(database)/documents/forms/$(formId)).data.userId == request.auth.uid;
       
       // Allow `create` separately because the document doesn't exist yet for the `get()` check above.
+      // request.resource refers to the document being written.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
       // --- Responses Subcollection ---
