@@ -46,18 +46,6 @@ export default function LoginPage() {
                 </span>
             </div>
             <AuthForm type="login" />
-
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg border text-sm text-muted-foreground">
-              <h4 className="font-semibold mb-2 text-center text-foreground">Test Credentials</h4>
-              <p className="flex justify-between">
-                  <span className="font-medium">Email:</span>
-                  <span className="font-mono">test@example.com</span>
-              </p>
-              <p className="flex justify-between mt-1">
-                  <span className="font-medium">Password:</span>
-                  <span className="font-mono">password</span>
-              </p>
-            </div>
           </div>
       </div>
     </div>
