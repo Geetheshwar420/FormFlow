@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -393,4 +393,32 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+function DashboardWithSearch() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [selectedFormForShare, setSelectedFormForShare] = useState<(Omit<Form, 'id'> & { id: string; }) | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [forms, setFormsList] = useState<(Omit<Form, 'id'> & { id: string; })[]>([]);
+
+  useEffect(() => {
+    const shareId = searchParams.get("share");
+    if (!shareId || !forms.length) return;
+
+    const target = forms.find((form) => form.id === shareId);
+    if (target) {
+      setSelectedFormForShare(target);
+      setShareDialogOpen(true);
+      router.replace("/dashboard");
+    }
+  }, [forms, searchParams, router]);
+
+  return <DashboardContent onFormsLoad={setFormsList} initialShareDialog={shareDialogOpen} initialSelectedForm={selectedFormForShare} />;
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>}>
+      <DashboardWithSearch />
+    </Suspense>
+  );
+}
