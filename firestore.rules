@@ -2,25 +2,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Ultra-permissive rules for debugging
-    match /{path=**}/forms/{formId} {
-      allow read, write: if request.auth != null;
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /{path=**}/responses/{responseId} {
-      allow read, write: if true;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
+    // ------------------------------------------------------------------------
+    // User Data Collection (/users/{userId})
+    // ------------------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
+      // Users can read and update their own profile.
+      allow get, update: if isOwner(userId);
 
+      // Users can create their own profile document upon signup.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+
+      // Disallow listing all users or deleting accounts from the client.
+      allow list, delete: if false;
+
+      // --- Private User Subcollections ---
+      match /themes/{themeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /settings/{settingId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // --- Forms Subcollection ---
+      match /forms/{formId} {
+        // Users can list their own forms.
+        allow list: if isOwner(userId);
+        
+        // Anyone can view a single form for public sharing.
+        allow get: if true;
+        
+        // Only the owner can create, update, or delete their own forms.
+        allow create, update, delete: if isOwner(userId);
+
+        // --- Responses Subcollection ---
+        match /responses/{responseId} {
+          // Allow response creation, enforcing the 'requiresSignIn' flag.
+          allow create: if resource.data.formOwnerId == userId && (
+              get(/databases/$(database)/documents/users/$(userId)/forms/$(formId)).data.requiresSignIn == false || isSignedIn()
+          );
+
+          // Only the form owner can read or manage responses.
+          allow get, list, update, delete: if isOwner(userId);
+        }
+      }
+    }
+    
+    // ------------------------------------------------------------------------
+    // Public Form Lookup Collection (/form_lookups/{formId})
+    // ------------------------------------------------------------------------
     match /form_lookups/{formId} {
-      allow read, write: if true;
-    }
+        // Anyone can read the lookup document to find a form's owner.
+        allow get: if true;
+        
+        // Only an authenticated user can create a lookup, and it must be for their own form.
+        allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+        
+        // Only the form's owner can delete the lookup document.
+        allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
 
-    match /{document=**} {
-      allow read, write: if false;
+        // Disallow listing or updating for security.
+        allow list, update: if false;
     }
   }
 }

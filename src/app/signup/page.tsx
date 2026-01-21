@@ -4,8 +4,6 @@ import * as React from 'react';
 import {
   useEffect,
   useState,
-  CSSProperties,
-  useRef,
 } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/firebase/auth/use-auth';
@@ -14,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import styles from './signup.module.css';
 
 // Internal Input component
 interface InputProps {
@@ -28,36 +25,25 @@ const AppInput = (props: InputProps) => {
   const { label, placeholder, icon, ...rest } = props;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
-  const topGradientRef = useRef<HTMLDivElement>(null);
-  const bottomGradientRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
     setMousePosition({
-      x,
+      x: e.clientX - rect.left,
       y: e.clientY - rect.top
     });
-    
-    // Update CSS variables directly
-    if (topGradientRef.current) {
-      topGradientRef.current.style.setProperty('--mouse-x', `${x}px`);
-    }
-    if (bottomGradientRef.current) {
-      bottomGradientRef.current.style.setProperty('--mouse-x', `${x}px`);
-    }
   };
 
   return (
-    <div className={styles.inputWrapper}>
+    <div className="w-full min-w-[200px] relative">
       { label && 
-        <label className={styles.inputLabel}>
+        <label className='block mb-2 text-sm'>
           {label}
         </label>
       }
-      <div className={styles.inputField}>
+      <div className="relative w-full">
         <input
-          className={styles.input}
+          className="peer relative z-10 border-2 border-[var(--color-border)] h-13 w-full rounded-md bg-[var(--color-surface)] px-4 py-3 font-thin outline-none drop-shadow-sm transition-all duration-200 ease-in-out focus:bg-[var(--color-bg)] placeholder:font-medium"
           placeholder={placeholder}
           onMouseMove={handleMouseMove}
           onMouseEnter={() => setIsHovering(true)}
@@ -67,17 +53,21 @@ const AppInput = (props: InputProps) => {
         {isHovering && (
           <>
             <div
-              ref={topGradientRef}
-              className={styles.topGradient}
+              className="absolute pointer-events-none top-0 left-0 right-0 h-[2px] z-20 rounded-t-md overflow-hidden"
+              style={{
+                background: `radial-gradient(30px circle at ${mousePosition.x}px 0px, var(--color-text-primary) 0%, transparent 70%)`,
+              }}
             />
             <div
-              ref={bottomGradientRef}
-              className={styles.bottomGradient}
+              className="absolute pointer-events-none bottom-0 left-0 right-0 h-[2px] z-20 rounded-b-md overflow-hidden"
+              style={{
+                background: `radial-gradient(30px circle at ${mousePosition.x}px 2px, var(--color-text-primary) 0%, transparent 70%)`,
+              }}
             />
           </>
         )}
         {icon && (
-          <div className={styles.inputIcon}>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20">
             {icon}
           </div>
         )}
@@ -106,22 +96,13 @@ export default function SignupPage() {
 
   const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
-  const gradientBlobRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const leftSection = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - leftSection.left;
-    const y = e.clientY - leftSection.top;
     setMousePosition({
-      x,
-      y
+      x: e.clientX - leftSection.left,
+      y: e.clientY - leftSection.top
     });
-    
-    // Update CSS variables directly
-    if (gradientBlobRef.current) {
-      gradientBlobRef.current.style.setProperty('--blob-x', `${x - 250}px`);
-      gradientBlobRef.current.style.setProperty('--blob-y', `${y - 250}px`);
-    }
   };
 
   const handleMouseEnter = () => {
@@ -187,25 +168,30 @@ export default function SignupPage() {
   }
 
   return (
-    <div className={styles.signupContainer}>
-      <div className={styles.signupCard}>
+    <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
+      <div className='w-full max-w-4xl flex justify-between h-auto md:h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
         <div
-          className={styles.leftSection}
+          className='w-full lg:w-1/2 p-8 flex flex-col justify-center h-full relative overflow-hidden'
           onMouseMove={handleMouseMove}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <div
-            ref={gradientBlobRef}
-            className={`${styles.gradientBlob} ${isHovering ? styles.visible : ''}`}
+            className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${
+              isHovering ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              transform: `translate(${mousePosition.x - 250}px, ${mousePosition.y - 250}px)`,
+              transition: 'transform 0.1s ease-out'
+            }}
           />
-          <div className={styles.formContent}>
-            <form className={styles.signupForm} onSubmit={handleSubmit}>
-              <div className={styles.formFields}>
-                <h1 className={styles.heading}>Create Account</h1>
+          <div className="relative z-10">
+            <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
+              <div className='grid gap-4 mb-2'>
+                <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Create Account</h1>
               </div>
               
-              <div className={styles.formFields}>
+              <div className='grid gap-4 items-center'>
                   <AppInput placeholder="Full Name" type="text" value={fullName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)} />
                   <AppInput placeholder="Username" type="text" value={username} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)} />
                   <AppInput placeholder="Email" type="email" value={email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)} />
@@ -263,7 +249,7 @@ export default function SignupPage() {
             </form>
           </div>
         </div>
-        <div className={styles.rightSection}>
+        <div className='hidden lg:block w-1/2 right h-full overflow-hidden relative'>
             {loginImage && <Image
               src={loginImage.imageUrl}
               loader={({ src }) => src}
@@ -271,7 +257,7 @@ export default function SignupPage() {
               priority
               alt={loginImage.description}
               data-ai-hint={loginImage.imageHint}
-              className={styles.imagePlaceholder}
+              className="w-full h-full object-cover transition-transform duration-300 opacity-30"
             />}
        </div>
       </div>

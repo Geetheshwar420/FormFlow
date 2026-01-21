@@ -24,7 +24,6 @@ export type Form = {
   createdAt: string;
   updatedAt?: string;
   requiresSignIn?: boolean;
-  editors?: string[];
 };
 
 export type FormResponse = {

@@ -100,11 +100,8 @@ export function useCollection<T = any>(
         setData(null)
         setIsLoading(false)
 
-        // Only emit critical errors (permission-denied on user-owned data)
-        // Don't emit errors for shared/public data access attempts
-        if (path && !path.includes('form_lookups')) {
-          errorEmitter.emit('permission-error', contextualError);
-        }
+        // trigger global error propagation
+        errorEmitter.emit('permission-error', contextualError);
       }
     );
 
