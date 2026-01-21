@@ -35,19 +35,23 @@
 
 ## Vercel Deployment Setup
 
-### Step 1: Add Environment Variables
-In Vercel Dashboard:
-1. Go to **Settings** → **Environment Variables**
-2. Add these variables (from Firebase Console):
-   ```
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID = studio-5221026026-b0007
-   NEXT_PUBLIC_FIREBASE_APP_ID = 1:647627665607:web:adc4c8eb7854f62a618ee2
-   NEXT_PUBLIC_FIREBASE_API_KEY = AIzaSyBqKrWxnlmznvtxRyGjL3xKyDsVms4xUaQ
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = studio-5221026026-b0007.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = (empty if none)
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = 647627665607
-   GEMINI_API_KEY = (if using AI features)
-   ```
+### Step 1: Add Environment Variables (IMPORTANT - Do NOT use vercel.json env section)
+In **Vercel Dashboard**:
+1. Go to your project → **Settings** → **Environment Variables**
+2. Add these variables individually using the dashboard form:
+
+**Copy these exact names:**
+```
+NEXT_PUBLIC_FIREBASE_PROJECT_ID = studio-5221026026-b0007
+NEXT_PUBLIC_FIREBASE_APP_ID = 1:647627665607:web:adc4c8eb7854f62a618ee2
+NEXT_PUBLIC_FIREBASE_API_KEY = AIzaSyBqKrWxnlmznvtxRyGjL3xKyDsVms4xUaQ
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = studio-5221026026-b0007.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = (leave blank)
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = 647627665607
+GEMINI_API_KEY = (if using AI features, otherwise leave blank)
+```
+
+**DO NOT use the `@` syntax** - that's for Vercel Secrets (different feature). Just paste the actual values or leave blank.
 
 ### Step 2: Update Firebase Console
 In Firebase Console:
