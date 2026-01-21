@@ -1,0 +1,25 @@
+.inputGradientTop {
+  background: radial-gradient(
+    30px circle at var(--mouse-x, 0px) 0px,
+    var(--color-text-primary) 0%,
+    transparent 70%
+  );
+}
+
+.inputGradientBottom {
+  background: radial-gradient(
+    30px circle at var(--mouse-x, 0px) 2px,
+    var(--color-text-primary) 0%,
+    transparent 70%
+  );
+}
+
+.hoverGradient {
+  --transform-x: translateX(0);
+  --transform-y: translateY(0);
+  transform: translate(
+    calc(var(--mouse-x, 0px) - 250px),
+    calc(var(--mouse-y, 0px) - 250px)
+  );
+  transition: transform 0.1s ease-out;
+}

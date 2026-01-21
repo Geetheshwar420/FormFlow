@@ -7,6 +7,7 @@ import {
   Suspense,
 } from 'react';
 import Image from 'next/image';
+import styles from './login.module.css';
 import { useAuth } from '@/firebase/auth/use-auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -70,16 +71,16 @@ const AppInput = (props: InputProps) => {
         {isHovering && (
           <>
             <div
-              className="absolute pointer-events-none top-0 left-0 right-0 h-[2px] z-20 rounded-t-md overflow-hidden"
+              className={`absolute pointer-events-none top-0 left-0 right-0 h-[2px] z-20 rounded-t-md overflow-hidden ${styles.inputGradientTop}`}
               style={{
-                background: `radial-gradient(30px circle at ${mousePosition.x}px 0px, var(--color-text-primary) 0%, transparent 70%)`,
-              }}
+                '--mouse-x': `${mousePosition.x}px`,
+              } as React.CSSProperties}
             />
             <div
-              className="absolute pointer-events-none bottom-0 left-0 right-0 h-[2px] z-20 rounded-b-md overflow-hidden"
+              className={`absolute pointer-events-none bottom-0 left-0 right-0 h-[2px] z-20 rounded-b-md overflow-hidden ${styles.inputGradientBottom}`}
               style={{
-                background: `radial-gradient(30px circle at ${mousePosition.x}px 2px, var(--color-text-primary) 0%, transparent 70%)`,
-              }}
+                '--mouse-x': `${mousePosition.x}px`,
+              } as React.CSSProperties}
             />
           </>
         )}
@@ -241,13 +242,13 @@ function LoginPageContent() {
           onMouseLeave={handleMouseLeave}
         >
           <div
-            className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${
+            className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${styles.hoverGradient} ${
               isHovering ? 'opacity-100' : 'opacity-0'
             }`}
             style={{
-              transform: `translate(${mousePosition.x - 250}px, ${mousePosition.y - 250}px)`,
-              transition: 'transform 0.1s ease-out'
-            }}
+              '--mouse-x': `${mousePosition.x}px`,
+              '--mouse-y': `${mousePosition.y}px`,
+            } as React.CSSProperties}
           />
           <div className="relative z-10">
             <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
