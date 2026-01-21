@@ -69,7 +69,7 @@ export default function ViewFormPage() {
 
     return (
        <div className="py-8 relative">
-         <FormViewer form={formData} />
+         <FormViewer form={{ ...formData, id: formId }} />
          {isOwner && (
             <Link href="/dashboard" passHref>
                 <Button variant="secondary" className="fixed bottom-5 right-5 z-10 shadow-lg">

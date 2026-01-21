@@ -68,8 +68,8 @@ function Dashboard() {
   }, [formsData]);
 
 
-  const publicOrigin = `https://${firebaseConfig.projectId}.web.app`;
-  const formUrl = selectedFormForShare ? `${publicOrigin}/v/${selectedFormForShare.id}` : '';
+  const publicOrigin = typeof window !== 'undefined' ? window.location.origin : `https://${firebaseConfig.projectId}.web.app`;
+  const formUrl = selectedFormForShare ? `${publicOrigin}/view/${selectedFormForShare.id}` : '';
 
   const copyToClipboard = () => {
       if(!formUrl) return;

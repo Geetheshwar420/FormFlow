@@ -32,7 +32,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isAppPage = !['/', '/login', '/signup'].includes(pathname) && !pathname.startsWith('/view/') && !pathname.startsWith('/v/');
+  
+  // Define which routes should show the app layout (sidebar + header)
+  const appRoutes = ['/dashboard', '/analytics', '/profile', '/forms', '/settings', '/help', '/billing'];
+  const isAppPage = appRoutes.some(route => pathname.startsWith(route));
 
   return (
     <html lang="en" suppressHydrationWarning>
