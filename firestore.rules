@@ -162,6 +162,7 @@ service cloud.firestore {
     // Allow users to list forms where they are listed as editors
     match /{path=**}/forms/{formId} {
       allow list: if isAuthenticated() && 
+        resource.data.keys().hasAny(['editors']) &&
         isFormEditor(resource.data.editors);
     }
 

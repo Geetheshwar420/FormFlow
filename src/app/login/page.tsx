@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   useEffect,
   useState,
+  Suspense,
 } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/firebase/auth/use-auth';
@@ -92,8 +93,7 @@ const AppInput = (props: InputProps) => {
   )
 }
 
-// The main page component
-export default function LoginPage() {
+function LoginForm() {
   const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
@@ -359,4 +359,13 @@ export default function LoginPage() {
       </DialogContent>
     </Dialog>
   )
+}
+
+// The main page component
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg)]"><Loader2 className="h-16 w-16 animate-spin" /></div>}>
+      <LoginForm />
+    </Suspense>
+  );
 }
