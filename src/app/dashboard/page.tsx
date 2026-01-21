@@ -41,19 +41,18 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useMemo, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { firebaseConfig } from "@/firebase/config";
 
 
-function Dashboard() {
+function DashboardContent() {
   const { user } = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [formToDelete, setFormToDelete] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedFormForShare, setSelectedFormForShare] = useState<(Omit<Form, 'id'> & { id: string; }) | null>(null);
@@ -66,12 +65,15 @@ function Dashboard() {
   
   const forms = useMemo(() => {
     if (!formsData) return [];
-    // Sort the results by creation date.
     return [...formsData].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [formsData]);
 
   useEffect(() => {
-    const shareId = searchParams.get("share");
+    if (typeof window === 'undefined') return;
+    
+    const params = new URLSearchParams(window.location.search);
+    const shareId = params.get("share");
+    
     if (!shareId || !forms.length) return;
 
     const target = forms.find((form) => form.id === shareId);
@@ -80,7 +82,7 @@ function Dashboard() {
       setShareDialogOpen(true);
       router.replace("/dashboard");
     }
-  }, [forms, searchParams, router]);
+  }, [forms, router]);
 
 
   const publicOrigin = typeof window !== 'undefined' ? window.location.origin : `https://${firebaseConfig.projectId}.web.app`;
@@ -150,21 +152,18 @@ function Dashboard() {
     if (svg && selectedFormForShare) {
       const svgData = new XMLSerializer().serializeToString(svg);
       const canvas = document.createElement("canvas");
-      const padding = 32; // 16px on each side
+      const padding = 32;
       canvas.width = svg.clientWidth + padding;
       canvas.height = svg.clientHeight + padding;
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Fill background with white
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       const img = new Image();
       img.onload = () => {
-        // Draw image with padding
         ctx.drawImage(img, padding / 2, padding / 2);
-
         const pngFile = canvas.toDataURL("image/png");
         const downloadLink = document.createElement("a");
         downloadLink.download = `${selectedFormForShare.title.replace(/ /g,"_")}-qrcode.png`;
@@ -393,32 +392,6 @@ function Dashboard() {
   );
 }
 
-function DashboardWithSearch() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [selectedFormForShare, setSelectedFormForShare] = useState<(Omit<Form, 'id'> & { id: string; }) | null>(null);
-  const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [forms, setFormsList] = useState<(Omit<Form, 'id'> & { id: string; })[]>([]);
-
-  useEffect(() => {
-    const shareId = searchParams.get("share");
-    if (!shareId || !forms.length) return;
-
-    const target = forms.find((form) => form.id === shareId);
-    if (target) {
-      setSelectedFormForShare(target);
-      setShareDialogOpen(true);
-      router.replace("/dashboard");
-    }
-  }, [forms, searchParams, router]);
-
-  return <DashboardContent onFormsLoad={setFormsList} initialShareDialog={shareDialogOpen} initialSelectedForm={selectedFormForShare} />;
-}
-
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading dashboard...</div>}>
-      <DashboardWithSearch />
-    </Suspense>
-  );
+  return <DashboardContent />;
 }
