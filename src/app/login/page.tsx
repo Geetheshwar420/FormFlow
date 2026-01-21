@@ -52,7 +52,7 @@ const AppInput = (props: InputProps) => {
 
   return (
     <div className="w-full min-w-[200px] relative">
-      { label && 
+      {label &&
         <label className='block mb-2 text-sm'>
           {label}
         </label>
@@ -92,8 +92,8 @@ const AppInput = (props: InputProps) => {
   )
 }
 
-// The main page component
-export default function LoginPage() {
+// The main login page component content
+function LoginContent() {
   const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
@@ -136,46 +136,46 @@ export default function LoginPage() {
     let emailToSignIn = loginIdentifier;
 
     if (!loginIdentifier.includes('@')) {
-        try {
-            const usersRef = collection(firestore, 'users');
-            const q = query(usersRef, where("username", "==", loginIdentifier));
-            const querySnapshot = await getDocs(q);
+      try {
+        const usersRef = collection(firestore, 'users');
+        const q = query(usersRef, where("username", "==", loginIdentifier));
+        const querySnapshot = await getDocs(q);
 
-            if (querySnapshot.empty) {
-                toast({
-                    title: 'Authentication Error',
-                    description: 'User not found.',
-                    variant: 'destructive'
-                });
-                return;
-            }
-            const userDoc = querySnapshot.docs[0];
-            emailToSignIn = userDoc.data().email;
-
-        } catch (err) {
-            toast({
-                title: 'Error',
-                description: 'Could not verify username.',
-                variant: 'destructive'
-            });
-            return;
+        if (querySnapshot.empty) {
+          toast({
+            title: 'Authentication Error',
+            description: 'User not found.',
+            variant: 'destructive'
+          });
+          return;
         }
+        const userDoc = querySnapshot.docs[0];
+        emailToSignIn = userDoc.data().email;
+
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Could not verify username.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     try {
-        await signIn(emailToSignIn, password);
-        toast({
-            title: 'Signed in.',
-            description: "Welcome back! You're logged in.",
-        });
-        const redirectUrl = searchParams.get('redirect');
-        router.push(redirectUrl || '/dashboard');
+      await signIn(emailToSignIn, password);
+      toast({
+        title: 'Signed in.',
+        description: "Welcome back! You're logged in.",
+      });
+      const redirectUrl = searchParams.get('redirect');
+      router.push(redirectUrl || '/dashboard');
     } catch (err: any) {
-        toast({
-            title: 'Authentication Error',
-            description: err.message,
-            variant: 'destructive'
-        });
+      toast({
+        title: 'Authentication Error',
+        description: err.message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -199,23 +199,23 @@ export default function LoginPage() {
 
   const handlePasswordReset = async () => {
     if (!resetEmail) {
-        toast({ title: "Email required", description: "Please enter your email address.", variant: "destructive" });
-        return;
+      toast({ title: "Email required", description: "Please enter your email address.", variant: "destructive" });
+      return;
     }
     try {
-        await sendPasswordReset(resetEmail);
-        toast({ title: "Password Reset Email Sent", description: "Check your inbox for a password reset link." });
+      await sendPasswordReset(resetEmail);
+      toast({ title: "Password Reset Email Sent", description: "Check your inbox for a password reset link." });
     } catch (err: any) {
-        toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   }
-  
+
   const loginImage = PlaceHolderImages.find(p => p.id === 'login-image-1');
 
   const socialIcons = [
     {
       name: 'Google',
-      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.612-3.512-11.283-8.192l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.712 34.755 44 30.038 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>,
+      icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" /><path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z" /><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.222 0-9.612-3.512-11.283-8.192l-6.522 5.025C9.505 39.556 16.227 44 24 44z" /><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.712 34.755 44 30.038 44 24c0-1.341-.138-2.65-.389-3.917z" /></svg>,
       onClick: handleGoogleSignIn,
       gradient: 'bg-[var(--color-bg)]',
     }
@@ -231,56 +231,55 @@ export default function LoginPage() {
 
   return (
     <Dialog>
-    <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
-      <div className='w-full max-w-4xl flex justify-between h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
-        <div
-          className='w-full lg:w-1/2 p-8 flex flex-col justify-center h-full relative overflow-hidden'
-          onMouseMove={handleMouseMove}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
+      <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
+        <div className='w-full max-w-4xl flex justify-between h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
           <div
-            className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${
-              isHovering ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              transform: `translate(${mousePosition.x - 250}px, ${mousePosition.y - 250}px)`,
-              transition: 'transform 0.1s ease-out'
-            }}
-          />
-          <div className="relative z-10">
-            <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
-              <div className='grid gap-4 mb-2'>
-                <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Sign in</h1>
-              </div>
-              
-              <div className='grid gap-4 items-center'>
+            className='w-full lg:w-1/2 p-8 flex flex-col justify-center h-full relative overflow-hidden'
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div
+              className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${isHovering ? 'opacity-100' : 'opacity-0'
+                }`}
+              style={{
+                transform: `translate(${mousePosition.x - 250}px, ${mousePosition.y - 250}px)`,
+                transition: 'transform 0.1s ease-out'
+              }}
+            />
+            <div className="relative z-10">
+              <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
+                <div className='grid gap-4 mb-2'>
+                  <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Sign in</h1>
+                </div>
+
+                <div className='grid gap-4 items-center'>
                   <AppInput placeholder="Email or Username" type="text" value={loginIdentifier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginIdentifier(e.target.value)} />
                   <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
-              </div>
-
-              <DialogTrigger asChild>
-                <button type="button" className='font-light text-sm md:text-md text-[var(--color-text-secondary)] hover:underline'>Forgot your password?</button>
-              </DialogTrigger>
-
-              <div className='flex gap-4 justify-center items-center mt-4'>
-                 <button 
-                  type="submit"
-                  disabled={isAuthLoading}
-                  className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
-                <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
-                  <div className="relative h-full w-8 bg-white/20" />
                 </div>
-              </button>
-              </div>
-              <div className="flex items-center my-2">
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-                <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or</span>
-                <div className="flex-grow border-t border-[var(--color-border)]"></div>
-              </div>
-              <div className="social-container mt-2">
+
+                <DialogTrigger asChild>
+                  <button type="button" className='font-light text-sm md:text-md text-[var(--color-text-secondary)] hover:underline'>Forgot your password?</button>
+                </DialogTrigger>
+
+                <div className='flex gap-4 justify-center items-center mt-4'>
+                  <button
+                    type="submit"
+                    disabled={isAuthLoading}
+                    className="group/button relative inline-flex justify-center items-center overflow-hidden rounded-md bg-[var(--color-border)] px-8 py-3 font-normal text-white transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-lg hover:shadow-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span className="text-sm px-2 py-1">Sign In</span>}
+                    <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-13deg)_translateX(-100%)] group-hover/button:duration-1000 group-hover/button:[transform:skew(-13deg)_translateX(100%)]">
+                      <div className="relative h-full w-8 bg-white/20" />
+                    </div>
+                  </button>
+                </div>
+                <div className="flex items-center my-2">
+                  <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                  <span className="flex-shrink mx-4 text-sm text-[var(--color-text-secondary)]">or</span>
+                  <div className="flex-grow border-t border-[var(--color-border)]"></div>
+                </div>
+                <div className="social-container mt-2">
                   <div className="flex items-center justify-center">
                     <ul className="flex gap-3 md:gap-4">
                       {socialIcons.map((social, index) => (
@@ -303,16 +302,16 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-              <div className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
-                Don&apos;t have an account?{' '}
-                <Link href="/signup" className="underline text-[var(--color-text-primary)]">
-                  Sign up
-                </Link>
-              </div>
-            </form>
+                <div className="mt-4 text-center text-sm text-[var(--color-text-secondary)]">
+                  Don&apos;t have an account?{' '}
+                  <Link href="/signup" className="underline text-[var(--color-text-primary)]">
+                    Sign up
+                  </Link>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-        <div className='hidden lg:block w-1/2 right h-full overflow-hidden relative'>
+          <div className='hidden lg:block w-1/2 right h-full overflow-hidden relative'>
             {loginImage && <Image
               src={loginImage.imageUrl}
               loader={({ src }) => src}
@@ -322,10 +321,10 @@ export default function LoginPage() {
               data-ai-hint={loginImage.imageHint}
               className="w-full h-full object-cover transition-transform duration-300 opacity-30"
             />}
-       </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Reset Password</DialogTitle>
           <DialogDescription>
@@ -359,4 +358,17 @@ export default function LoginPage() {
       </DialogContent>
     </Dialog>
   )
+}
+
+// The main page component wraps the content in Suspense
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg)]">
+        <Loader2 className="h-16 w-16 animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </React.Suspense>
+  );
 }
