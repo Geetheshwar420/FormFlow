@@ -255,8 +255,8 @@ function LoginForm() {
               </div>
               
               <div className='grid gap-4 items-center'>
-                  <AppInput placeholder="Email or Username" type="text" value={loginIdentifier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginIdentifier(e.target.value)} />
-                  <AppInput placeholder="Password" type="password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
+                  <AppInput placeholder="Email or Username" type="text" autoComplete="username" value={loginIdentifier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginIdentifier(e.target.value)} />
+                  <AppInput placeholder="Password" type="password" autoComplete="current-password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
               </div>
 
               <DialogTrigger asChild>
