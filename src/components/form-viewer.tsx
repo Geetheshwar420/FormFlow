@@ -12,8 +12,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection } from "firebase/firestore";
+import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, increment } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 import { Loader2, CheckCircle } from "lucide-react";
 import { useAuth } from "@/firebase/auth/use-auth";
@@ -62,6 +62,11 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
                 }))
             };
             await addDocumentNonBlocking(responsesCollection, responsePayload);
+            
+            // Increment response count on the form document
+            const formRef = doc(firestore, `users/${form.userId}/forms/${form.id}`);
+            await setDocumentNonBlocking(formRef, { responseCount: increment(1) }, { merge: true });
+            
             toast({
                 title: "Response submitted!",
                 description: "Thank you for filling out the form.",

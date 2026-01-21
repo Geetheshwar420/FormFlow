@@ -6,18 +6,29 @@ import { useAuth } from "@/firebase/auth/use-auth";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useFirestore, useMemoFirebase } from "@/firebase/provider";
 import { collection } from "firebase/firestore";
-import type { Form } from "@/lib/types";
+import type { Form, FormResponse } from "@/lib/types";
 import { ArrowLeft, BarChart, FileText, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 
 export default function AnalyticsPage() {
     const { user } = useAuth();
     const firestore = useFirestore();
 
     const formsCollection = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'forms') : null, [firestore, user]);
-    const { data: forms, isLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
+    const { data: forms, isLoading: formsLoading } = useCollection<Omit<Form, 'id'>>(formsCollection);
+
+    // Calculate total responses by querying all response counts from forms
+    const totalResponses = useMemo(() => {
+        if (!forms) return 0;
+        return forms.reduce((acc, form) => {
+            return acc + (form.responseCount || 0);
+        }, 0);
+    }, [forms]);
+
+    const isLoading = formsLoading;
 
     if (isLoading) {
         return (
@@ -83,7 +94,6 @@ export default function AnalyticsPage() {
     }
 
     const totalForms = forms?.length || 0;
-    const totalResponses = forms?.reduce((acc, form) => acc + (form.responseCount || 0), 0) || 0;
 
     return (
         <AuthGuard>
