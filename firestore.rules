@@ -16,6 +16,35 @@ service cloud.firestore {
     }
 
     match /form_lookups/{formId} {
+      // Anyone can read a lookup to find the form owner
+      allow get: if true;
+
+      // Authenticated users can create lookups (typically done server-side)
+      allow create: if isAuthenticated() &&
+        request.resource.data.keys().hasAll(['ownerId']) &&
+        request.resource.data.ownerId == getUserId();
+
+      // Only the lookup creator can update
+      allow update: if isAuthenticated() && 
+        resource.data.ownerId == getUserId();
+
+      // Only the lookup creator can delete
+      allow delete: if isAuthenticated() && 
+        resource.data.ownerId == getUserId();
+
+      // Prevent listing all lookups
+      allow list: if false;
+    }
+
+    // =====================================================================
+    // COLLECTION GROUP RULES - Shared Forms Access
+    // =====================================================================
+    // Allow users to list forms where they are listed as editors
+    match /{path=**}/forms/{formId} {
+      allow list: if isAuthenticated() && (
+        path == /databases/$(database)/documents/users/$(request.auth.uid) ||
+        (resource.data.keys().hasAny(['editors']) && isFormEditor(resource.data.editors))
+      );
       allow read, write: if true;
     }
 

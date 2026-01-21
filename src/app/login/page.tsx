@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   useEffect,
   useState,
+  Suspense,
 } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/firebase/auth/use-auth';
@@ -92,6 +93,7 @@ const AppInput = (props: InputProps) => {
   )
 }
 
+function LoginForm() {
 // The main login page component content
 function LoginContent() {
   const { user, isUserLoading, signIn, isAuthLoading, signInWithGoogle, sendPasswordReset } = useAuth();
@@ -234,6 +236,24 @@ function LoginContent() {
       <div className="h-screen w-full bg-[var(--color-bg)] flex items-center justify-center p-4 text-[var(--color-text-primary)]">
         <div className='w-full max-w-4xl flex justify-between h-[600px] bg-[var(--color-surface)] rounded-lg shadow-xl overflow-hidden'>
           <div
+            className={`absolute pointer-events-none w-[500px] h-[500px] bg-gradient-to-r from-purple-300/30 via-blue-300/30 to-pink-300/30 rounded-full blur-3xl transition-opacity duration-200 ${
+              isHovering ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              transform: `translate(${mousePosition.x - 250}px, ${mousePosition.y - 250}px)`,
+              transition: 'transform 0.1s ease-out'
+            }}
+          />
+          <div className="relative z-10">
+            <form className='text-center grid gap-4 h-full' onSubmit={handleSubmit}>
+              <div className='grid gap-4 mb-2'>
+                <h1 className='text-3xl md:text-4xl font-extrabold text-[var(--color-heading)]'>Sign in</h1>
+              </div>
+              
+              <div className='grid gap-4 items-center'>
+                  <AppInput placeholder="Email or Username" type="text" autoComplete="username" value={loginIdentifier} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLoginIdentifier(e.target.value)} />
+                  <AppInput placeholder="Password" type="password" autoComplete="current-password" value={password} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)} />
+              </div>
             className='w-full lg:w-1/2 p-8 flex flex-col justify-center h-full relative overflow-hidden'
             onMouseMove={handleMouseMove}
             onMouseEnter={handleMouseEnter}
@@ -360,6 +380,12 @@ function LoginContent() {
   )
 }
 
+// The main page component
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg)]"><Loader2 className="h-16 w-16 animate-spin" /></div>}>
+      <LoginForm />
+    </Suspense>
 // The main page component wraps the content in Suspense
 export default function LoginPage() {
   return (
