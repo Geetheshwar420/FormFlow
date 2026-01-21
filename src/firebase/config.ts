@@ -1,8 +1,10 @@
+// Firebase config - use environment variables in production
+// Public Firebase config values (safe to expose in browser)
 export const firebaseConfig = {
-  "projectId": "studio-5221026026-b0007",
-  "appId": "1:647627665607:web:adc4c8eb7854f62a618ee2",
-  "apiKey": "AIzaSyBqKrWxnlmznvtxRyGjL3xKyDsVms4xUaQ",
-  "authDomain": "studio-5221026026-b0007.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "647627665607"
+  "projectId": process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "studio-5221026026-b0007",
+  "appId": process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:647627665607:web:adc4c8eb7854f62a618ee2",
+  "apiKey": process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyBqKrWxnlmznvtxRyGjL3xKyDsVms4xUaQ",
+  "authDomain": process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "studio-5221026026-b0007.firebaseapp.com",
+  "measurementId": process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "",
+  "messagingSenderId": process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "647627665607"
 };

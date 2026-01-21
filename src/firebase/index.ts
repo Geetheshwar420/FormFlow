@@ -17,10 +17,9 @@ export function initializeFirebase() {
       // Attempt to initialize via Firebase App Hosting environment variables
       firebaseApp = initializeApp();
     } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
+      // Only log in development, never expose errors in production
+      if (process.env.NODE_ENV !== "production") {
+        console.warn('Automatic initialization failed. Falling back to firebase config object.');
       }
       firebaseApp = initializeApp(firebaseConfig);
     }
@@ -40,7 +39,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
-export * from './provider';
+export { useAuthService, useFirebase, useUser, useFirestore, useFirebaseApp, useMemoFirebase } from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';

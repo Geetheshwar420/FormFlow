@@ -82,7 +82,10 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => { // Auth listener error
-        console.error("FirebaseProvider: onAuthStateChanged error:", error);
+        // Log error details only in development
+        if (process.env.NODE_ENV !== "production") {
+          console.error("FirebaseProvider: onAuthStateChanged error:", error);
+        }
         setUserAuthState({ user: null, isUserLoading: false, userError: error });
       }
     );
@@ -137,7 +140,7 @@ export const useFirebase = (): FirebaseServicesAndUser => {
 };
 
 /** Hook to access Firebase Auth instance. */
-export const useAuth = (): Auth => {
+export const useAuthService = (): Auth => {
   const { auth } = useFirebase();
   return auth;
 };
