@@ -49,10 +49,8 @@ service cloud.firestore {
 
         // --- Responses Subcollection ---
         match /responses/{responseId} {
-          // Allow response creation, enforcing the 'requiresSignIn' flag.
-          allow create: if resource.data.formOwnerId == userId && (
-              get(/databases/$(database)/documents/users/$(userId)/forms/$(formId)).data.requiresSignIn == false || isSignedIn()
-          );
+          // Allow anyone to create a response (for public forms)
+          allow create: if true;
 
           // Only the form owner can read or manage responses.
           allow get, list, update, delete: if isOwner(userId);

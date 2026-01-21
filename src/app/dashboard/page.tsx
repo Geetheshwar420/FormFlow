@@ -41,7 +41,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { firebaseConfig } from "@/firebase/config";
@@ -51,6 +52,8 @@ function Dashboard() {
   const { user } = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [formToDelete, setFormToDelete] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedFormForShare, setSelectedFormForShare] = useState<(Omit<Form, 'id'> & { id: string; }) | null>(null);
@@ -66,6 +69,18 @@ function Dashboard() {
     // Sort the results by creation date.
     return [...formsData].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [formsData]);
+
+  useEffect(() => {
+    const shareId = searchParams.get("share");
+    if (!shareId || !forms.length) return;
+
+    const target = forms.find((form) => form.id === shareId);
+    if (target) {
+      setSelectedFormForShare(target);
+      setShareDialogOpen(true);
+      router.replace("/dashboard");
+    }
+  }, [forms, searchParams, router]);
 
 
   const publicOrigin = typeof window !== 'undefined' ? window.location.origin : `https://${firebaseConfig.projectId}.web.app`;

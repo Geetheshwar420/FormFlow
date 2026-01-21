@@ -152,7 +152,7 @@ export function FormBuilder({ initialData }: FormBuilderProps) {
               title: "Form saved!",
               description: "Your form has been successfully saved.",
             });
-            router.replace(`/forms/edit/${newFormRef.id}`);
+            router.replace(`/dashboard?share=${newFormRef.id}`);
           }
         });
       }

@@ -67,6 +67,7 @@ export function FormViewer({ form, isPreview = false }: FormViewerProps) {
                 description: "Thank you for filling out the form.",
             });
             setAnswers({});
+            router.push(user ? "/dashboard" : "/");
         } catch (error) {
             console.error("Error submitting response:", error);
             toast({
